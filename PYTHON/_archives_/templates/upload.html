@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CV Parser - Bulk Upload</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .upload-container { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 5px; }
+        #previewArea { margin-top: 20px; }
+        .file-list { margin-top: 10px; text-align: left; }
+        .progress-container { margin: 20px 0; display: none; }
+        progress { width: 100%; height: 20px; }
+        .error { color: red; }
+        .success { color: green; }
+        #fileInput { display: none; }
+        .upload-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .reset-btn {
+            background-color: #f44336;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .file-drop-area {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        .file-drop-area.highlight { background-color: #f0f0f0; }
+        .button-container { margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <h1>Bulk CV Upload</h1>
+        <p>Upload multiple CVs in PDF format for processing</p>
+        
+        <div id="fileDropArea" class="file-drop-area">
+            <p>Drag & drop PDF files here or</p>
+            <button class="upload-btn" id="selectFilesBtn">Select Files</button>
+            <input type="file" id="fileInput" name="files[]" multiple accept=".pdf">
+        </div>
+        
+        <div id="selectedFiles" style="text-align: left; margin: 10px 0;"></div>
+        
+        <div class="button-container">
+            <button class="upload-btn" id="uploadBtn" style="display: none;">Start Upload</button>
+            <button class="reset-btn" id="resetBtn" style="display: none;">Reset</button>
+        </div>
+        
+        <div class="progress-container" id="progressContainer">
+            <h3>Upload Progress</h3>
+            <progress id="uploadProgress" value="0" max="100"></progress>
+            <div id="statusMessage">Ready to upload</div>
+        </div>
+        
+        <div id="previewArea"></div>
+        
+        <div style="margin-top: 20px;">
+            <a href="/search">Search CVs</a> | 
+            <a href="/stats">View Statistics</a>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const fileInput = document.getElementById('fileInput');
+        const fileDropArea = document.getElementById('fileDropArea');
+        const selectFilesBtn = document.getElementById('selectFilesBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const selectedFilesDiv = document.getElementById('selectedFiles');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('uploadProgress');
+        const statusMessage = document.getElementById('statusMessage');
+        const previewArea = document.getElementById('previewArea');
+        
+        // State
+        let selectedFiles = [];
+        
+        // Event listeners
+        selectFilesBtn.addEventListener('click', () => fileInput.click());
+        uploadBtn.addEventListener('click', startUpload);
+        resetBtn.addEventListener('click', resetUpload);
+        
+        // Handle drag and drop
+        fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropArea.classList.add('highlight');
+        });
+        
+        fileDropArea.addEventListener('dragleave', () => {
+            fileDropArea.classList.remove('highlight');
+        });
+        
+        fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropArea.classList.remove('highlight');
+            
+            if (e.dataTransfer.files.length) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+        
+        // Handle file input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFiles(e.target.files);
+            }
+        });
+        
+        // Functions
+        function handleFiles(files) {
+            selectedFiles = Array.from(files);
+            updateSelectedFilesUI();
+            
+            // Show upload and reset buttons
+            uploadBtn.style.display = 'inline-block';
+            resetBtn.style.display = 'inline-block';
+        }
+        
+        function updateSelectedFilesUI() {
+            selectedFilesDiv.innerHTML = '';
+            
+            if (selectedFiles.length === 0) {
+                selectedFilesDiv.innerHTML = '<p>No files selected</p>';
+                return;
+            }
+            
+            selectedFilesDiv.innerHTML = `<p><strong>Selected ${selectedFiles.length} files:</strong></p>`;
+            const fileList = document.createElement('ul');
+            
+            selectedFiles.forEach(file => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${file.name} (${formatFileSize(file.size)})`;
+                fileList.appendChild(listItem);
+            });
+            
+            selectedFilesDiv.appendChild(fileList);
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function startUpload() {
+            if (selectedFiles.length === 0) {
+                statusMessage.innerHTML = '<span class="error">No files selected</span>';
+                return;
+            }
+            
+            // Prepare UI
+            progressContainer.style.display = 'block';
+            progressBar.value = 0;
+            statusMessage.innerHTML = `Preparing to upload ${selectedFiles.length} files...`;
+            previewArea.innerHTML = '<div class="file-list" id="fileList"></div>';
+            
+            // Disable buttons during upload
+            selectFilesBtn.disabled = true;
+            uploadBtn.disabled = true;
+            resetBtn.disabled = true;
+            
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('files[]', file);
+            });
+            
+            const xhr = new XMLHttpRequest();
+            
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    progressBar.value = percentComplete;
+                    statusMessage.innerHTML = `Uploading: ${percentComplete}%`;
+                }
+            };
+            
+            xhr.onload = function() {
+                // Re-enable buttons
+                selectFilesBtn.disabled = false;
+                resetBtn.disabled = false;
+                
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    processUploadResponse(response);
+                } else {
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        statusMessage.innerHTML = `<span class="error">Error: ${errorResponse.error || 'Upload failed'}</span>`;
+                    } catch {
+                        statusMessage.innerHTML = `<span class="error">Error: Upload failed with status ${xhr.status}</span>`;
+                    }
+                }
+            };
+            
+            xhr.onerror = function() {
+                statusMessage.innerHTML = '<span class="error">Upload failed. Please try again.</span>';
+                selectFilesBtn.disabled = false;
+                resetBtn.disabled = false;
+            };
+            
+            xhr.open('POST', '/upload', true);
+            xhr.send(formData);
+        }
+        
+        function processUploadResponse(response) {
+            const fileList = document.getElementById('fileList');
+            
+            if (response.success) {
+                progressBar.value = 100;
+                
+                if (response.success_count > 0) {
+                    statusMessage.innerHTML = `<span class="success">Successfully processed ${response.success_count} of ${response.total_files} files</span>`;
+                    
+                    response.processed.forEach(file => {
+                        fileList.innerHTML += `
+                            <div class="file-item">
+                                <p>
+                                    <strong>${file.filename}</strong> - 
+                                    ${file.name || 'No name extracted'} - 
+                                    <a href="/view/${file.id}">View</a>
+                                </p>
+                            </div>
+                        `;
+                    });
+                }
+                
+                if (response.error_count > 0) {
+                    statusMessage.innerHTML += `<br><span class="error">${response.error_count} files failed to process</span>`;
+                    
+                    if (response.errors && response.errors.length > 0) {
+                        fileList.innerHTML += '<h4>Errors:</h4>';
+                        response.errors.forEach(error => {
+                            fileList.innerHTML += `
+                                <div class="error-item">
+                                    <p>
+                                        <strong>${error.filename}</strong>: ${error.error}
+                                    </p>
+                                </div>
+                            `;
+                        });
+                    }
+                }
+            } else {
+                statusMessage.innerHTML = `<span class="error">Upload failed: ${response.error || 'Unknown error'}</span>`;
+            }
+        }
+        
+        function resetUpload() {
+            // Reset all state and UI
+            selectedFiles = [];
+            fileInput.value = '';
+            updateSelectedFilesUI();
+            
+            // Hide buttons
+            uploadBtn.style.display = 'none';
+            resetBtn.style.display = 'none';
+            
+            // Reset progress
+            progressContainer.style.display = 'none';
+            progressBar.value = 0;
+            statusMessage.innerHTML = 'Ready to upload';
+            
+            // Clear preview
+            previewArea.innerHTML = '';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CV Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .search-container {
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .result-item {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .result-item:hover {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .pagination a,
+        .current-page {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            text-decoration: none;
+        }
+
+        .pagination a:hover {
+            background: #f5f5f5;
+        }
+
+        .current-page {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .skill-tag {
+            background: #e1f0ff;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .result-meta {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="search-container">
+        <h1>CV Search</h1>
+
+        <div class="search-box">
+            <form action="/search" method="get">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search by name, skills, education..."
+                    style="width: 70%; padding: 10px;">
+                <button type="submit"
+                    style="padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 3px;">Search</button>
+            </form>
+        </div>
+
+        {% if query or results %}
+        <div class="results-info">
+            {% if query %}
+            <h3>Results for "{{ query }}" ({{ total }} found)</h3>
+            {% else %}
+            <h3>Recently Uploaded CVs</h3>
+            {% endif %}
+        </div>
+
+        {% if results %}
+        {% for result in results %}
+        <!-- In your search results section, update to show more fields: -->
+        <div class="result-item">
+            <div class="result-header">
+                <h3>{{ result.name }}</h3>
+                <span class="result-meta">Uploaded: {{ result.upload_date }}</span>
+            </div>
+
+            {% if result.email %}
+            <p><strong>Email:</strong> {{ result.email }}</p>
+            {% endif %}
+
+            {% if result.skills %}
+            <div class="skills-section">
+                <strong>Skills:</strong>
+                <div class="skills-list">
+                    {% for category, skills in result.skills.items() %}
+                    {% for skill in skills %}
+                    <span class="skill-tag">{{ skill }}</span>
+                    {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if result.education %}
+            <div class="education-section">
+                <strong>Education:</strong>
+                <ul>
+                    {% for edu in result.education %}
+                    <li>
+                        {{ edu.degree }} at {{ edu.institution }}
+                        {% if edu.year %} ({{ edu.year }}){% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <a href="/view/{{ result.id }}" style="color: #007bff; text-decoration: none;">View Full CV →</a>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="no-results">
+            <p>No results found for "{{ query }}"</p>
+            <p>Try different search terms or <a href="/">upload more CVs</a></p>
+        </div>
+        {% endif %}
+
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="/search?q={{ query }}&page={{ page-1 }}">Previous</a>
+            {% endif %}
+
+            <span class="current-page">{{ page }}</span>
+
+            {% if page < total_pages %} <a href="/search?q={{ query }}&page={{ page+1 }}">Next</a>
+                {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="no-results">
+            <p>Enter a search term to find CVs or <a href="/">upload new CVs</a></p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+
+</html>
