@@ -1,0 +1,754 @@
+/* ================================
+   Material Design CSS for JavaFX CV App
+   Based on Material Design 3 (Material You)
+   ================================ */
+
+/* CSS Custom Properties - Material Design Color System */
+.root {
+    /* Material Design 3 Color Tokens */
+    -fx-md-primary: #6750A4;
+    -fx-md-on-primary: #FFFFFF;
+    -fx-md-primary-container: #EADDFF;
+    -fx-md-on-primary-container: #21005D;
+
+    -fx-md-secondary: #625B71;
+    -fx-md-on-secondary: #FFFFFF;
+    -fx-md-secondary-container: #E8DEF8;
+    -fx-md-on-secondary-container: #1D192B;
+
+    -fx-md-tertiary: #7D5260;
+    -fx-md-on-tertiary: #FFFFFF;
+    -fx-md-tertiary-container: #FFD8E4;
+    -fx-md-on-tertiary-container: #31111D;
+
+    -fx-md-error: #BA1A1A;
+    -fx-md-on-error: #FFFFFF;
+    -fx-md-error-container: #FFDAD6;
+    -fx-md-on-error-container: #410002;
+
+    -fx-md-success: #006D3B;
+    -fx-md-on-success: #FFFFFF;
+    -fx-md-success-container: #7EF8B2;
+    -fx-md-on-success-container: #00210F;
+
+    -fx-md-warning: #8B5A00;
+    -fx-md-on-warning: #FFFFFF;
+    -fx-md-warning-container: #FFDDB1;
+    -fx-md-on-warning-container: #2C1800;
+
+    /* Surface Colors */
+    -fx-md-surface: #FEF7FF;
+    -fx-md-on-surface: #1C1B1F;
+    -fx-md-surface-variant: #E7E0EC;
+    -fx-md-on-surface-variant: #49454F;
+    -fx-md-surface-container-lowest: #FFFFFF;
+    -fx-md-surface-container-low: #F7F2FA;
+    -fx-md-surface-container: #F3EDF7;
+    -fx-md-surface-container-high: #ECE6F0;
+    -fx-md-surface-container-highest: #E6E0E9;
+
+    /* Outline Colors */
+    -fx-md-outline: #79747E;
+    -fx-md-outline-variant: #CAC4D0;
+
+    /* Material Design Elevations */
+    -fx-md-elevation-1: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 1, 0, 0, 1);
+    -fx-md-elevation-2: dropshadow(gaussian, rgba(0, 0, 0, 0.14), 3, 0, 0, 1),
+    dropshadow(gaussian, rgba(0, 0, 0, 0.12), 1, 0, 0, 2);
+    -fx-md-elevation-3: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 8, 0, 0, 3),
+    dropshadow(gaussian, rgba(0, 0, 0, 0.24), 3, 0, 0, 3);
+    -fx-md-elevation-4: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 10, 0, 0, 2),
+    dropshadow(gaussian, rgba(0, 0, 0, 0.24), 5, 0, 0, 4);
+    -fx-md-elevation-5: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 14, 0, 0, 5),
+    dropshadow(gaussian, rgba(0, 0, 0, 0.24), 7, 0, 0, 5);
+
+    /* Material Design Typography */
+    -fx-font-family: 'Roboto', 'Segoe UI', system-ui, sans-serif;
+    -fx-font-size: 10px;
+
+    /* Material Design Border Radius */
+    -fx-md-corner-extra-small: 4px;
+    -fx-md-corner-small: 8px;
+    -fx-md-corner-medium: 12px;
+    -fx-md-corner-large: 16px;
+    -fx-md-corner-extra-large: 28px;
+}
+
+/* ================================
+   APPLICATION ROOT
+   ================================ */
+.material-app {
+    -fx-background-color: -fx-md-surface;
+    -fx-font-family: -fx-font-family;
+}
+
+/* ================================
+   MATERIAL DESIGN CARDS
+   ================================ */
+.md-card {
+    -fx-background-color: -fx-md-surface-container-low;
+    -fx-background-radius: -fx-md-corner-medium;
+    -fx-effect: -fx-md-elevation-1;
+    -fx-padding: 16px;
+}
+
+.md-card-elevated {
+    -fx-background-color: -fx-md-surface-container-low;
+    -fx-background-radius: -fx-md-corner-medium;
+    -fx-effect: -fx-md-elevation-3;
+    -fx-padding: 16px;
+}
+
+.md-card-filled {
+    -fx-background-color: -fx-md-surface-container-highest;
+    -fx-background-radius: -fx-md-corner-medium;
+    -fx-padding: 16px;
+}
+
+.md-card-outlined {
+    -fx-background-color: -fx-md-surface;
+    -fx-border-color: -fx-md-outline-variant;
+    -fx-border-width: 1px;
+    -fx-background-radius: -fx-md-corner-medium;
+    -fx-border-radius: -fx-md-corner-medium;
+    -fx-padding: 16px;
+}
+
+/* ================================
+   MATERIAL DESIGN BUTTONS
+   ================================ */
+.md-button {
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+    -fx-padding: 10px 24px;
+    -fx-font-weight: 500;
+    -fx-cursor: hand;
+    -fx-font-size: 14px;
+}
+
+/* Filled Button (Primary) */
+.md-button-filled {
+    -fx-background-color: -fx-md-primary;
+    -fx-text-fill: -fx-md-on-primary;
+    -fx-effect: -fx-md-elevation-1;
+}
+
+.md-button-filled:hover {
+    -fx-effect: -fx-md-elevation-2;
+    -fx-background-color: derive(-fx-md-primary, 5%);
+}
+
+.md-button-filled:pressed {
+    -fx-effect: -fx-md-elevation-1;
+    -fx-background-color: derive(-fx-md-primary, -5%);
+}
+
+/* Filled Tonal Button */
+.md-button-tonal {
+    -fx-background-color: -fx-md-secondary-container;
+    -fx-text-fill: -fx-md-on-secondary-container;
+    -fx-effect: -fx-md-elevation-1;
+}
+
+.md-button-tonal:hover {
+    -fx-effect: -fx-md-elevation-2;
+    -fx-background-color: derive(-fx-md-secondary-container, -5%);
+}
+
+/* Outlined Button */
+.md-button-outlined {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-md-primary;
+    -fx-border-color: -fx-md-outline;
+    -fx-border-width: 1px;
+}
+
+.md-button-outlined:hover {
+    -fx-background-color: rgba(103, 80, 164, 0.08);
+}
+
+.md-button-outlined:pressed {
+    -fx-background-color: rgba(103, 80, 164, 0.16);
+}
+
+/* Text Button */
+.md-button-text {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-md-primary;
+}
+
+.md-button-text:hover {
+    -fx-background-color: rgba(103, 80, 164, 0.08);
+}
+
+.md-button-text:pressed {
+    -fx-background-color: rgba(103, 80, 164, 0.16);
+}
+
+/* Icon Buttons */
+.md-button-icon {
+    -fx-background-color: transparent;
+    -fx-background-radius: 20px;
+    -fx-padding: 8px;
+    -fx-pref-width: 40px;
+    -fx-pref-height: 40px;
+}
+
+.md-button-icon:hover {
+    -fx-background-color: rgba(103, 80, 164, 0.08);
+}
+
+.md-button-icon-filled {
+    -fx-background-color: -fx-md-primary;
+    -fx-text-fill: -fx-md-on-primary;
+}
+
+/* Floating Action Button */
+.md-fab {
+    -fx-background-color: -fx-md-primary-container;
+    -fx-text-fill: -fx-md-on-primary-container;
+    -fx-background-radius: 16px;
+    -fx-effect: -fx-md-elevation-3;
+    -fx-padding: 16px;
+    -fx-cursor: hand;
+}
+
+.md-fab:hover {
+    -fx-effect: -fx-md-elevation-4;
+}
+
+.md-fab-large {
+    -fx-background-radius: 28px;
+    -fx-padding: 30px;
+}
+
+/* ================================
+   TEXT FIELDS - MATERIAL DESIGN
+   ================================ */
+.md-text-field {
+    -fx-background-color: -fx-md-surface-container-highest;
+    -fx-background-radius: -fx-md-corner-extra-small -fx-md-corner-extra-small 0 0;
+    -fx-border-color: transparent transparent -fx-md-on-surface-variant transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 16px 16px 8px 16px;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-text-field:focused {
+    -fx-border-color: transparent transparent -fx-md-primary transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+
+/* Outlined Text Field */
+.md-text-field-outlined {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-md-outline;
+    -fx-border-width: 1px;
+    -fx-border-radius: -fx-md-corner-extra-small;
+    -fx-background-radius: -fx-md-corner-extra-small;
+    -fx-padding: 16px;
+}
+
+.md-text-field-outlined:focused {
+    -fx-border-color: -fx-md-primary;
+    -fx-border-width: 2px;
+}
+
+/* ================================
+   MATERIAL DESIGN TABLE
+   ================================ */
+.md-table-view {
+    -fx-background-color: -fx-md-surface;
+    -fx-background-radius: -fx-md-corner-medium;
+    -fx-effect: -fx-md-elevation-1;
+}
+
+.md-table-view .column-header-background {
+    -fx-background-color: -fx-md-surface-container-high;
+}
+
+.md-table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-md-on-surface-variant;
+    -fx-font-weight: 500;
+    -fx-padding: 16px;
+    -fx-border-color: transparent transparent -fx-md-outline-variant transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.md-table-view .table-row-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-table-view .table-row-cell:odd {
+    -fx-background-color: rgba(103, 80, 164, 0.04);
+}
+
+.md-table-view .table-row-cell:selected {
+    -fx-background-color: -fx-md-secondary-container;
+    -fx-text-fill: -fx-md-on-secondary-container;
+}
+
+.md-table-view .table-row-cell:hover {
+    -fx-background-color: rgba(103, 80, 164, 0.08);
+}
+
+.md-table-view .table-cell {
+    -fx-padding: 16px;
+    -fx-border-color: transparent transparent -fx-md-outline-variant transparent;
+    -fx-border-width: 0 0 0.5px 0;
+}
+
+/* ================================
+   MATERIAL DESIGN APP BAR
+   ================================ */
+.md-app-bar {
+    -fx-background-color: -fx-md-surface-container;
+    -fx-effect: -fx-md-elevation-2;
+    -fx-padding: 4px 16px;
+    -fx-min-height: 64px;
+}
+
+.md-app-bar-title {
+    -fx-text-fill: -fx-md-on-surface;
+    -fx-font-size: 22px;
+    -fx-font-weight: 400;
+}
+
+/* ================================
+   NAVIGATION
+   ================================ */
+.md-nav-rail {
+    -fx-background-color: -fx-md-surface-container;
+    -fx-padding: 16px 0;
+    -fx-pref-width: 80px;
+}
+
+.md-nav-drawer {
+    -fx-background-color: -fx-md-surface-container-low;
+    -fx-effect: -fx-md-elevation-1;
+    -fx-pref-width: 360px;
+}
+
+.md-nav-item {
+    -fx-background-color: transparent;
+    -fx-background-radius: 28px;
+    -fx-padding: 12px 16px;
+    -fx-text-fill: -fx-md-on-surface-variant;
+    -fx-cursor: hand;
+}
+
+.md-nav-item:hover {
+    -fx-background-color: rgba(103, 80, 164, 0.08);
+}
+
+.md-nav-item:selected {
+    -fx-background-color: -fx-md-secondary-container;
+    -fx-text-fill: -fx-md-on-secondary-container;
+}
+
+/* ================================
+   MENU BAR - MATERIAL STYLE
+   ================================ */
+.md-menu-bar {
+    -fx-background-color: -fx-md-surface-container;
+    -fx-effect: -fx-md-elevation-1;
+    -fx-padding: 8px 16px;
+}
+
+.md-menu-bar .menu {
+    -fx-text-fill: -fx-md-on-surface;
+    -fx-font-weight: 500;
+    -fx-padding: 8px 16px;
+    -fx-background-radius: -fx-md-corner-small;
+}
+
+.md-menu-bar .menu:hover {
+    -fx-background-color: rgba(103, 80, 164, 0.08);
+}
+
+.md-menu-bar .menu:showing {
+    -fx-background-color: -fx-md-secondary-container;
+    -fx-text-fill: -fx-md-on-secondary-container;
+}
+
+.context-menu {
+    -fx-background-color: -fx-md-surface-container;
+    -fx-background-radius: -fx-md-corner-extra-small;
+    -fx-effect: -fx-md-elevation-3;
+    -fx-padding: 8px 0;
+}
+
+.menu-item {
+    -fx-padding: 12px 16px;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.menu-item:focused {
+    -fx-background-color: rgba(103, 80, 164, 0.08);
+}
+
+/* ================================
+   MATERIAL DESIGN CHIPS
+   ================================ */
+.md-chip {
+    -fx-background-color: -fx-md-surface-container-high;
+    -fx-text-fill: -fx-md-on-surface-variant;
+    -fx-background-radius: 8px;
+    -fx-padding: 6px 16px;
+    -fx-font-size: 14px;
+}
+
+.md-chip-filled {
+    -fx-background-color: -fx-md-secondary-container;
+    -fx-text-fill: -fx-md-on-secondary-container;
+}
+
+.md-chip-outlined {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-md-outline;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+}
+
+/* ================================
+   PROGRESS INDICATORS
+   ================================ */
+.md-progress-circular {
+    -fx-progress-color: -fx-md-primary;
+}
+
+.md-progress-linear {
+    -fx-background-color: rgba(103, 80, 164, 0.16);
+    -fx-background-radius: 2px;
+}
+
+.md-progress-linear .bar {
+    -fx-background-color: -fx-md-primary;
+    -fx-background-radius: 2px;
+}
+
+/* ================================
+   STATUS INDICATORS
+   ================================ */
+.md-status-success {
+    -fx-text-fill: -fx-md-success;
+    -fx-font-weight: 500;
+}
+
+.md-status-error {
+    -fx-text-fill: -fx-md-error;
+    -fx-font-weight: 500;
+}
+
+.md-status-warning {
+    -fx-text-fill: -fx-md-warning;
+    -fx-font-weight: 500;
+}
+
+.md-status-info {
+    -fx-text-fill: -fx-md-primary;
+    -fx-font-weight: 500;
+}
+
+/* ================================
+   MATERIAL DESIGN DIALOGS
+   ================================ */
+.md-dialog {
+    -fx-background-color: -fx-md-surface-container-high;
+    -fx-background-radius: -fx-md-corner-extra-large;
+    -fx-effect: -fx-md-elevation-3;
+    -fx-padding: 24px;
+}
+
+.md-dialog-title {
+    -fx-text-fill: -fx-md-on-surface;
+    -fx-font-size: 24px;
+    -fx-font-weight: 400;
+}
+
+.md-dialog-content {
+    -fx-text-fill: -fx-md-on-surface-variant;
+    -fx-font-size: 14px;
+    -fx-padding: 16px 0;
+}
+
+/* ================================
+   TABS - MATERIAL DESIGN
+   ================================ */
+.md-tab-pane {
+    -fx-background-color: transparent;
+}
+
+.md-tab-pane .tab-header-area {
+    -fx-background-color: -fx-md-surface;
+}
+
+.md-tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-md-on-surface-variant;
+    -fx-padding: 16px 24px;
+    -fx-font-weight: 500;
+    -fx-background-radius: 0;
+}
+
+.md-tab-pane .tab:selected {
+    -fx-text-fill: -fx-md-primary;
+    -fx-border-color: transparent transparent -fx-md-primary transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+
+.md-tab-pane .tab:hover {
+    -fx-background-color: rgba(103, 80, 164, 0.08);
+}
+
+/* ================================
+   LIST VIEW - MATERIAL DESIGN
+   ================================ */
+.md-list-view {
+    -fx-background-color: -fx-md-surface;
+    -fx-background-radius: -fx-md-corner-medium;
+}
+
+.md-list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-md-on-surface;
+    -fx-padding: 16px;
+    -fx-border-color: transparent transparent -fx-md-outline-variant transparent;
+    -fx-border-width: 0 0 0.5px 0;
+}
+
+.md-list-view .list-cell:selected {
+    -fx-background-color: -fx-md-secondary-container;
+    -fx-text-fill: -fx-md-on-secondary-container;
+}
+
+.md-list-view .list-cell:hover {
+    -fx-background-color: rgba(103, 80, 164, 0.08);
+}
+
+/* ================================
+   COMBO BOX - MATERIAL DESIGN
+   ================================ */
+.md-combo-box {
+    -fx-background-color: -fx-md-surface-container-highest;
+    -fx-background-radius: -fx-md-corner-extra-small -fx-md-corner-extra-small 0 0;
+    -fx-border-color: transparent transparent -fx-md-on-surface-variant transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.md-combo-box:focused {
+    -fx-border-color: transparent transparent -fx-md-primary transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+
+.md-combo-box .list-view {
+    -fx-background-color: -fx-md-surface-container;
+    -fx-effect: -fx-md-elevation-3;
+}
+
+/* ================================
+   SCROLL BAR - MATERIAL DESIGN
+   ================================ */
+.md-scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.md-scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+.md-scroll-bar .thumb {
+    -fx-background-color: -fx-md-on-surface-variant;
+    -fx-background-radius: 8px;
+    -fx-opacity: 0.6;
+}
+
+.md-scroll-bar .thumb:hover {
+    -fx-opacity: 0.8;
+}
+
+.md-scroll-bar .thumb:pressed {
+    -fx-opacity: 1.0;
+}
+
+/* ================================
+   UTILITY CLASSES
+   ================================ */
+.md-headline-large {
+    -fx-font-size: 32px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-headline-medium {
+    -fx-font-size: 28px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-headline-small {
+    -fx-font-size: 24px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-title-large {
+    -fx-font-size: 22px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-title-medium {
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-title-small {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-body-large {
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-body-medium {
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-body-small {
+    -fx-font-size: 12px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -fx-md-on-surface-variant;
+}
+
+.md-label-large {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-label-medium {
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+.md-label-small {
+    -fx-font-size: 11px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-md-on-surface;
+}
+
+/* ================================
+   SPACING UTILITIES
+   ================================ */
+.md-padding-0 { -fx-padding: 0; }
+.md-padding-4 { -fx-padding: 4px; }
+.md-padding-8 { -fx-padding: 8px; }
+.md-padding-12 { -fx-padding: 12px; }
+.md-padding-16 { -fx-padding: 16px; }
+.md-padding-20 { -fx-padding: 20px; }
+.md-padding-24 { -fx-padding: 24px; }
+.md-padding-32 { -fx-padding: 32px; }
+
+.md-spacing-4 { -fx-spacing: 4px; }
+.md-spacing-8 { -fx-spacing: 8px; }
+.md-spacing-12 { -fx-spacing: 12px; }
+.md-spacing-16 { -fx-spacing: 16px; }
+.md-spacing-20 { -fx-spacing: 20px; }
+.md-spacing-24 { -fx-spacing: 24px; }
+
+/* ================================
+   RESPONSIVE BREAKPOINTS
+   ================================ */
+@media (max-width: 600px) {
+    .md-card {
+        -fx-padding: 12px;
+    }
+
+    .md-button {
+        -fx-padding: 8px 16px;
+    }
+}
+
+/* ================================
+   DARK THEME SUPPORT
+   ================================ */
+.root:dark {
+    -fx-md-primary: #D0BCFF;
+    -fx-md-on-primary: #381E72;
+    -fx-md-primary-container: #4F378B;
+    -fx-md-on-primary-container: #EADDFF;
+
+    -fx-md-surface: #141218;
+    -fx-md-on-surface: #E6E0E9;
+    -fx-md-surface-container-low: #1D1B20;
+    -fx-md-surface-container: #211F26;
+    -fx-md-surface-container-high: #2B2930;
+    -fx-md-surface-container-highest: #36343B;
+}
+
+.expandable-text-area {
+    -fx-pref-height: 600px;
+    -fx-max-height: infinity;
+}
+
+.md-button {
+    -fx-cursor: hand;
+}
+
+.md-status-success {
+    -fx-text-fill: #2e7d32;
+}
+
+.md-status-error {
+    -fx-text-fill: #c62828;
+}
+
+.md-status-info {
+    -fx-text-fill: #0277bd;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:vertical {
+    -fx-background-color: derive(-fx-base, -10%);
+}
+
+.scroll-bar:vertical .thumb {
+    -fx-background-color: derive(-fx-base, -30%);
+    -fx-background-insets: 2;
+}
+
+.expandable-text-area {
+    -fx-pref-height: 600px;
+    -fx-max-height: infinity;
+}
+
+.text-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.text-scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.border-pane {
+    -fx-background-color: -fx-background;
+}
