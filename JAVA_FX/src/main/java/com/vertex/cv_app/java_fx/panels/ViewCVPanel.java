@@ -5,6 +5,7 @@ import com.vertex.cv_app.utils.HttpClientUtil;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -14,6 +15,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -100,7 +103,7 @@ public class ViewCVPanel extends VBox {
     // UI Components
     private Label cvIdLabel;
     private Button backButton, editButton, saveButton, deleteButton, viewRawTextButton;
-    private Button viewPdfButton, downloadPdfButton;
+    private Button viewPdfButton, downloadPdfButton, fullViewButton;
     private WebView personalInfoView;
     private TextArea skillsArea, educationArea, experienceArea, otherInfoArea;
     private ScrollPane mainScrollPane;
@@ -168,6 +171,7 @@ public class ViewCVPanel extends VBox {
 
         viewPdfButton = createMaterialButton("View PDF", "md-button-filled");
         downloadPdfButton = createMaterialButton("Download PDF", "md-button-filled");
+        fullViewButton = createMaterialButton("Full View", "md-button-tonal");
         editButton = createMaterialButton("Edit", "md-button-tonal");
         viewRawTextButton = createMaterialButton("View Raw Text", "md-button-outlined");
         saveButton = createMaterialButton("Save", "md-button-filled");
@@ -178,7 +182,7 @@ public class ViewCVPanel extends VBox {
 
         saveButton.setVisible(false);
 
-        HBox buttonContainer = new HBox(8, viewPdfButton, downloadPdfButton, editButton, viewRawTextButton, saveButton, deleteButton);
+        HBox buttonContainer = new HBox(8, viewPdfButton, downloadPdfButton, fullViewButton, editButton, viewRawTextButton, saveButton, deleteButton);
         buttonContainer.setAlignment(Pos.CENTER_RIGHT);
 
         topBar.getChildren().addAll(backButton, cvIdLabel, spacer, buttonContainer);
@@ -197,15 +201,15 @@ public class ViewCVPanel extends VBox {
         personalInfoLabel.getStyleClass().add("md-headline-small");
 
         personalInfoView = new WebView();
-        personalInfoView.setPrefHeight(200);
+        personalInfoView.setPrefHeight(250); // Increased height
         personalInfoView.setStyle("-fx-background-color: transparent;");
 
         personalInfoBox.getChildren().addAll(personalInfoLabel, personalInfoView);
 
-        // Skills, Education, Experience sections with Material Design
-        VBox skillsBox = createMaterialDisplaySection("Skills", skillsArea = new TextArea(), 150);
-        VBox educationBox = createMaterialDisplaySection("Education", educationArea = new TextArea(), 200);
-        VBox experienceBox = createMaterialDisplaySection("Experience", experienceArea = new TextArea(), 200);
+        // Skills, Education, Experience sections with Material Design and expand buttons
+        VBox skillsBox = createMaterialDisplaySectionWithExpand("Skills", skillsArea = new TextArea(), 200);
+        VBox educationBox = createMaterialDisplaySectionWithExpand("Education", educationArea = new TextArea(), 250);
+        VBox experienceBox = createMaterialDisplaySectionWithExpand("Experience", experienceArea = new TextArea(), 300);
         VBox otherInfoBox = createMaterialDisplaySection("Other Information", otherInfoArea = new TextArea(), 150);
 
         panel.getChildren().addAll(personalInfoBox, skillsBox, educationBox, experienceBox, otherInfoBox);
@@ -231,11 +235,224 @@ public class ViewCVPanel extends VBox {
         textArea.setEditable(false);
         textArea.setWrapText(true);
         textArea.setPrefHeight(prefHeight);
-        textArea.getStyleClass().add("md-text-field");
-        textArea.setStyle("-fx-control-inner-background: #f8f8f8;");
+        textArea.getStyleClass().addAll("md-text-field", "expandable-text-area");
+        textArea.setStyle("-fx-control-inner-background: #f8f8f8; -fx-font-size: 14px;");
 
         container.getChildren().addAll(label, textArea);
         return container;
+    }
+
+    private VBox createMaterialDisplaySectionWithExpand(String title, TextArea textArea, double prefHeight) {
+        VBox container = new VBox(8);
+        container.getStyleClass().addAll("md-card", "md-padding-16");
+
+        // Header with title and expand button
+        HBox headerBox = new HBox(10);
+        headerBox.setAlignment(Pos.CENTER_LEFT);
+
+        Label label = new Label(title);
+        label.getStyleClass().add("md-title-medium");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button expandButton = createMaterialButton("🔍 Expand", "md-button-text");
+        expandButton.setStyle("-fx-font-size: 12px; -fx-padding: 6px 12px;");
+
+        // Set up expand button action
+        expandButton.setOnAction(e -> showExpandedView(title, textArea.getText()));
+
+        headerBox.getChildren().addAll(label, spacer, expandButton);
+
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        textArea.setPrefHeight(prefHeight);
+        textArea.getStyleClass().addAll("md-text-field", "expandable-text-area");
+        textArea.setStyle("-fx-control-inner-background: #f8f8f8; -fx-font-size: 14px;");
+
+        container.getChildren().addAll(headerBox, textArea);
+        return container;
+    }
+
+    private void showExpandedView(String title, String content) {
+        Stage expandedStage = new Stage();
+        expandedStage.setTitle("Full View - " + title);
+        expandedStage.initModality(Modality.APPLICATION_MODAL);
+
+        // Create expanded content
+        VBox expandedContent = new VBox(16);
+        expandedContent.setPadding(new Insets(24));
+        expandedContent.getStyleClass().add("md-card");
+
+        // Title
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("md-headline-medium");
+        titleLabel.setStyle("-fx-text-fill: #6750A4; -fx-font-weight: bold;");
+
+        // Expanded text area
+        TextArea expandedTextArea = new TextArea(content);
+        expandedTextArea.setEditable(false);
+        expandedTextArea.setWrapText(true);
+        expandedTextArea.setPrefHeight(500);
+        expandedTextArea.setPrefWidth(700);
+        expandedTextArea.getStyleClass().add("md-text-field");
+        expandedTextArea.setStyle(
+                "-fx-font-size: 16px; " +
+                        "-fx-font-family: 'Segoe UI', 'Roboto', Arial, sans-serif; " +
+                        "-fx-control-inner-background: #fafafa; " +
+                        "-fx-padding: 16px;"
+        );
+
+        // Close button
+        Button closeButton = createMaterialButton("Close", "md-button-filled");
+        closeButton.setOnAction(e -> expandedStage.close());
+
+        HBox buttonBox = new HBox(closeButton);
+        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+
+        expandedContent.getChildren().addAll(titleLabel, expandedTextArea, buttonBox);
+
+        ScrollPane expandedScrollPane = new ScrollPane(expandedContent);
+        expandedScrollPane.setFitToWidth(true);
+        expandedScrollPane.setStyle("-fx-background-color: transparent;");
+
+        Scene expandedScene = new Scene(expandedScrollPane, 800, 600);
+
+        // Apply CSS if available
+        try {
+            String cssResource = getClass().getResource("/styles/material-design.css").toExternalForm();
+            expandedScene.getStylesheets().add(cssResource);
+        } catch (Exception ex) {
+            // CSS not found, continue without styling
+        }
+
+        expandedStage.setScene(expandedScene);
+        expandedStage.show();
+    }
+
+    private void showFullViewDialog() {
+        if (currentCvData == null) {
+            showMaterialError("No CV data available for full view");
+            return;
+        }
+
+        Stage fullViewStage = new Stage();
+        fullViewStage.setTitle("Full CV View - " + currentCvId);
+        fullViewStage.initModality(Modality.APPLICATION_MODAL);
+
+        TabPane fullViewTabPane = new TabPane();
+        fullViewTabPane.getStyleClass().add("md-tab-pane");
+        fullViewTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+
+        // Personal Info Tab
+        Tab personalTab = new Tab("👤 Personal Info");
+        WebView personalWebView = new WebView();
+        personalWebView.setPrefHeight(400);
+        personalWebView.getEngine().loadContent(generatePersonalInfoHTML());
+        personalTab.setContent(personalWebView);
+
+        // Skills Tab
+        Tab skillsTab = new Tab("🛠️ Skills");
+        TextArea fullSkillsArea = createFullViewTextArea(skillsArea.getText());
+        skillsTab.setContent(new ScrollPane(fullSkillsArea));
+
+        // Education Tab
+        Tab educationTab = new Tab("🎓 Education");
+        TextArea fullEducationArea = createFullViewTextArea(educationArea.getText());
+        educationTab.setContent(new ScrollPane(fullEducationArea));
+
+        // Experience Tab
+        Tab experienceTab = new Tab("💼 Experience");
+        TextArea fullExperienceArea = createFullViewTextArea(experienceArea.getText());
+        experienceTab.setContent(new ScrollPane(fullExperienceArea));
+
+        // Other Info Tab
+        Tab otherTab = new Tab("📋 Other Info");
+        TextArea fullOtherArea = createFullViewTextArea(otherInfoArea.getText());
+        otherTab.setContent(new ScrollPane(fullOtherArea));
+
+        fullViewTabPane.getTabs().addAll(personalTab, skillsTab, educationTab, experienceTab, otherTab);
+
+        // Create close button
+        VBox fullViewContainer = new VBox(16);
+        fullViewContainer.setPadding(new Insets(16));
+
+        Button closeFullViewButton = createMaterialButton("Close Full View", "md-button-filled");
+        closeFullViewButton.setOnAction(e -> fullViewStage.close());
+
+        HBox closeButtonBox = new HBox(closeFullViewButton);
+        closeButtonBox.setAlignment(Pos.CENTER_RIGHT);
+        closeButtonBox.setPadding(new Insets(16, 0, 0, 0));
+
+        fullViewContainer.getChildren().addAll(fullViewTabPane, closeButtonBox);
+        VBox.setVgrow(fullViewTabPane, Priority.ALWAYS);
+
+        Scene fullViewScene = new Scene(fullViewContainer, 1000, 700);
+
+        // Apply CSS if available
+        try {
+            String cssResource = getClass().getResource("/styles/material-design.css").toExternalForm();
+            fullViewScene.getStylesheets().add(cssResource);
+        } catch (Exception ex) {
+            // CSS not found, continue without styling
+        }
+
+        fullViewStage.setScene(fullViewScene);
+        fullViewStage.show();
+    }
+
+    private TextArea createFullViewTextArea(String content) {
+        TextArea textArea = new TextArea(content);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        textArea.setPrefHeight(500);
+        textArea.getStyleClass().add("md-text-field");
+        textArea.setStyle(
+                "-fx-font-size: 16px; " +
+                        "-fx-font-family: 'Segoe UI', 'Roboto', Arial, sans-serif; " +
+                        "-fx-control-inner-background: #fafafa; " +
+                        "-fx-padding: 20px;"
+        );
+        return textArea;
+    }
+
+    private String generatePersonalInfoHTML() {
+        StringBuilder html = new StringBuilder("<html><body style='font-family: Roboto, Arial, sans-serif; padding: 24px; color: #1C1B1F; font-size: 16px; line-height: 1.6;'>");
+
+        if (currentCvData != null && currentCvData.has("personal_info")) {
+            JSONObject info = currentCvData.getJSONObject("personal_info");
+            html.append("<h2 style='color: #6750A4; margin-bottom: 24px; font-size: 28px;'>Personal Information</h2>");
+            html.append("<table style='width: 100%; border-collapse: collapse; font-size: 16px;'>");
+
+            String name = info.optString("name", "");
+            if (!name.isEmpty()) html.append("<tr><td style='padding: 12px; font-weight: 600; width: 30%;'>Name:</td><td style='padding: 12px;'>").append(name).append("</td></tr>");
+
+            String email = info.optString("email", "");
+            if (!email.isEmpty()) html.append("<tr><td style='padding: 12px; font-weight: 600;'>Email:</td><td style='padding: 12px;'>").append(email).append("</td></tr>");
+
+            String phone = info.optString("phone", "");
+            if (!phone.isEmpty()) html.append("<tr><td style='padding: 12px; font-weight: 600;'>Phone:</td><td style='padding: 12px;'>").append(phone).append("</td></tr>");
+
+            String address = info.optString("address", "");
+            if (!address.isEmpty()) html.append("<tr><td style='padding: 12px; font-weight: 600;'>Address:</td><td style='padding: 12px;'>").append(address).append("</td></tr>");
+
+            String github = info.optString("github", "");
+            if (!github.isEmpty()) html.append("<tr><td style='padding: 12px; font-weight: 600;'>GitHub:</td><td style='padding: 12px;'>").append(github).append("</td></tr>");
+
+            String linkedin = info.optString("linkedin", "");
+            if (!linkedin.isEmpty()) html.append("<tr><td style='padding: 12px; font-weight: 600;'>LinkedIn:</td><td style='padding: 12px;'>").append(linkedin).append("</td></tr>");
+
+            String gender = info.optString("gender", "");
+            if (!gender.isEmpty()) html.append("<tr><td style='padding: 12px; font-weight: 600;'>Gender:</td><td style='padding: 12px;'>").append(gender).append("</td></tr>");
+
+            String type = info.optString("type", "");
+            if (!type.isEmpty()) html.append("<tr><td style='padding: 12px; font-weight: 600;'>Type:</td><td style='padding: 12px;'>").append(type).append("</td></tr>");
+
+            html.append("</table>");
+        }
+
+        html.append("</body></html>");
+        return html.toString();
     }
 
     private VBox createMaterialEditModePanel() {
@@ -304,10 +521,10 @@ public class ViewCVPanel extends VBox {
 
         personalInfoBox.getChildren().addAll(personalLabel, personalGrid, detailsBox);
 
-        // Edit areas for JSON data with Material Design
-        VBox skillsEditBox = createMaterialEditSection("Skills (JSON)", skillsEditArea = new TextArea(), 150);
-        VBox educationEditBox = createMaterialEditSection("Education (JSON)", educationEditArea = new TextArea(), 150);
-        VBox experienceEditBox = createMaterialEditSection("Experience (JSON)", experienceEditArea = new TextArea(), 150);
+        // Edit areas for JSON data with Material Design - Larger text areas
+        VBox skillsEditBox = createMaterialEditSectionExpanded("Skills (JSON)", skillsEditArea = new TextArea(), 200);
+        VBox educationEditBox = createMaterialEditSectionExpanded("Education (JSON)", educationEditArea = new TextArea(), 200);
+        VBox experienceEditBox = createMaterialEditSectionExpanded("Experience (JSON)", experienceEditArea = new TextArea(), 250);
 
         panel.getChildren().addAll(personalInfoBox, skillsEditBox, educationEditBox, experienceEditBox);
 
@@ -320,6 +537,112 @@ public class ViewCVPanel extends VBox {
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
         return container;
+    }
+
+    private VBox createMaterialEditSectionExpanded(String title, TextArea textArea, double prefHeight) {
+        VBox container = new VBox(8);
+        container.getStyleClass().addAll("md-card", "md-padding-16");
+
+        // Header with expand button
+        HBox headerBox = new HBox(10);
+        headerBox.setAlignment(Pos.CENTER_LEFT);
+
+        Label label = new Label(title);
+        label.getStyleClass().add("md-title-medium");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button expandEditButton = createMaterialButton("📝 Edit Full", "md-button-text");
+        expandEditButton.setStyle("-fx-font-size: 12px; -fx-padding: 6px 12px;");
+        expandEditButton.setOnAction(e -> showExpandedEditView(title, textArea));
+
+        headerBox.getChildren().addAll(label, spacer, expandEditButton);
+
+        textArea.setPrefHeight(prefHeight);
+        textArea.setWrapText(true);
+        textArea.getStyleClass().addAll("md-text-field", "expandable-text-area");
+        textArea.setStyle("-fx-font-family: 'Roboto Mono', 'Courier New', monospace; -fx-font-size: 14px;");
+
+        container.getChildren().addAll(headerBox, textArea);
+        return container;
+    }
+
+    private void showExpandedEditView(String title, TextArea originalTextArea) {
+        Stage expandedStage = new Stage();
+        expandedStage.setTitle("Edit Full - " + title);
+        expandedStage.initModality(Modality.APPLICATION_MODAL);
+
+        VBox expandedContent = new VBox(16);
+        expandedContent.setPadding(new Insets(24));
+        expandedContent.getStyleClass().add("md-card");
+
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("md-headline-medium");
+        titleLabel.setStyle("-fx-text-fill: #6750A4; -fx-font-weight: bold;");
+
+        TextArea expandedTextArea = new TextArea(originalTextArea.getText());
+        expandedTextArea.setWrapText(true);
+        expandedTextArea.setPrefHeight(450);
+        expandedTextArea.setPrefWidth(700);
+        expandedTextArea.getStyleClass().add("md-text-field");
+        expandedTextArea.setStyle(
+                "-fx-font-size: 16px; " +
+                        "-fx-font-family: 'Roboto Mono', 'Courier New', monospace; " +
+                        "-fx-control-inner-background: #fafafa; " +
+                        "-fx-padding: 16px;"
+        );
+
+        // Buttons with proper functionality
+        HBox buttonBox = new HBox(12);
+        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+        buttonBox.setPadding(new Insets(16, 0, 0, 0));
+
+        Button cancelButton = createMaterialButton("Cancel", "md-button-outlined");
+        cancelButton.setOnAction(e -> expandedStage.close());
+
+        Button saveToTextAreaButton = createMaterialButton("Save to Form", "md-button-tonal");
+        saveToTextAreaButton.setOnAction(e -> {
+            // Update the original text area in the form
+            originalTextArea.setText(expandedTextArea.getText());
+            showMaterialSuccess("Content Updated", "The content has been updated in the form. Click 'Save' in the main form to save to database.");
+            expandedStage.close();
+        });
+
+        Button saveToMainButton = createMaterialButton("Save to Database", "md-button-filled");
+        saveToMainButton.setOnAction(e -> {
+            // Update the original text area and trigger main save
+            originalTextArea.setText(expandedTextArea.getText());
+            expandedStage.close();
+
+            // Trigger the main save function
+            saveChanges();
+        });
+
+        buttonBox.getChildren().addAll(cancelButton, saveToTextAreaButton, saveToMainButton);
+
+        // Info label to explain the buttons
+        Label infoLabel = new Label("• Save to Form: Updates the form only\n• Save to Database: Updates form and saves to server");
+        infoLabel.getStyleClass().add("md-body-small");
+        infoLabel.setStyle("-fx-text-fill: #666666; -fx-padding: 8px 0;");
+
+        expandedContent.getChildren().addAll(titleLabel, expandedTextArea, infoLabel, buttonBox);
+
+        ScrollPane expandedScrollPane = new ScrollPane(expandedContent);
+        expandedScrollPane.setFitToWidth(true);
+        expandedScrollPane.setStyle("-fx-background-color: transparent;");
+
+        Scene expandedScene = new Scene(expandedScrollPane, 800, 650);
+
+        try {
+            String cssResource = getClass().getResource("/styles/material-design.css").toExternalForm();
+            expandedScene.getStylesheets().add(cssResource);
+        } catch (Exception ex) {
+            // Continue without styling
+        }
+
+        expandedStage.setScene(expandedScene);
+        expandedStage.show();
     }
 
     private TextField createMaterialTextField(String prompt) {
@@ -347,31 +670,13 @@ public class ViewCVPanel extends VBox {
         Label labelNode = new Label(label);
         labelNode.getStyleClass().add("md-label-medium");
         grid.add(labelNode, 0, row);
-
         grid.add(field, 1, row);
-    }
-
-    private VBox createMaterialEditSection(String title, TextArea textArea, double prefHeight) {
-        VBox container = new VBox(8);
-        container.getStyleClass().addAll("md-card", "md-padding-16");
-
-        Label label = new Label(title);
-        label.getStyleClass().add("md-title-medium");
-
-        textArea.setPrefHeight(prefHeight);
-        textArea.setWrapText(true);
-        textArea.getStyleClass().add("md-text-field");
-        textArea.setStyle("-fx-font-family: 'Roboto Mono', 'Courier New', monospace; -fx-font-size: 12px;");
-
-        container.getChildren().addAll(label, textArea);
-        return container;
     }
 
     private Button createMaterialButton(String text, String styleClass) {
         Button button = new Button(text);
         button.getStyleClass().addAll("md-button", styleClass);
 
-        // Add hover effects
         button.setOnMouseEntered(e -> {
             if (styleClass.contains("filled")) {
                 button.setStyle("-fx-effect: -fx-md-elevation-2;");
@@ -396,6 +701,7 @@ public class ViewCVPanel extends VBox {
         editButton.setOnAction(e -> switchToEditMode());
         saveButton.setOnAction(e -> saveChanges());
         deleteButton.setOnAction(e -> deleteCV());
+        fullViewButton.setOnAction(e -> showFullViewDialog());
         viewRawTextButton.setOnAction(e -> {
             if (currentCvId != null) {
                 parentApp.showRawTextView(currentCvId, this);
@@ -433,37 +739,37 @@ public class ViewCVPanel extends VBox {
     }
 
     private void displayCVDetails(JSONObject cvData) {
-        // Display personal info
-        StringBuilder html = new StringBuilder("<html><body style='font-family: Roboto, Arial, sans-serif; padding: 16px; color: #1C1B1F;'>");
+        // Display personal info with enhanced HTML
+        StringBuilder html = new StringBuilder("<html><body style='font-family: Roboto, Arial, sans-serif; padding: 20px; color: #1C1B1F; line-height: 1.6;'>");
 
         if (cvData.has("personal_info")) {
             JSONObject info = cvData.getJSONObject("personal_info");
-            html.append("<h3 style='color: #6750A4; margin-bottom: 16px;'>Personal Information</h3>");
-            html.append("<table style='width: 100%; border-collapse: collapse;'>");
+            html.append("<h3 style='color: #6750A4; margin-bottom: 20px; font-size: 22px;'>Personal Information</h3>");
+            html.append("<table style='width: 100%; border-collapse: collapse; font-size: 15px;'>");
 
             String name = info.optString("name", "");
-            if (!name.isEmpty()) html.append("<tr><td style='padding: 8px; font-weight: 500;'>Name:</td><td style='padding: 8px;'>").append(name).append("</td></tr>");
+            if (!name.isEmpty()) html.append("<tr><td style='padding: 10px; font-weight: 600; width: 25%;'>Name:</td><td style='padding: 10px;'>").append(name).append("</td></tr>");
 
             String email = info.optString("email", "");
-            if (!email.isEmpty()) html.append("<tr><td style='padding: 8px; font-weight: 500;'>Email:</td><td style='padding: 8px;'>").append(email).append("</td></tr>");
+            if (!email.isEmpty()) html.append("<tr><td style='padding: 10px; font-weight: 600;'>Email:</td><td style='padding: 10px;'>").append(email).append("</td></tr>");
 
             String phone = info.optString("phone", "");
-            if (!phone.isEmpty()) html.append("<tr><td style='padding: 8px; font-weight: 500;'>Phone:</td><td style='padding: 8px;'>").append(phone).append("</td></tr>");
+            if (!phone.isEmpty()) html.append("<tr><td style='padding: 10px; font-weight: 600;'>Phone:</td><td style='padding: 10px;'>").append(phone).append("</td></tr>");
 
             String address = info.optString("address", "");
-            if (!address.isEmpty()) html.append("<tr><td style='padding: 8px; font-weight: 500;'>Address:</td><td style='padding: 8px;'>").append(address).append("</td></tr>");
+            if (!address.isEmpty()) html.append("<tr><td style='padding: 10px; font-weight: 600;'>Address:</td><td style='padding: 10px;'>").append(address).append("</td></tr>");
 
             String github = info.optString("github", "");
-            if (!github.isEmpty()) html.append("<tr><td style='padding: 8px; font-weight: 500;'>GitHub:</td><td style='padding: 8px;'>").append(github).append("</td></tr>");
+            if (!github.isEmpty()) html.append("<tr><td style='padding: 10px; font-weight: 600;'>GitHub:</td><td style='padding: 10px;'>").append(github).append("</td></tr>");
 
             String linkedin = info.optString("linkedin", "");
-            if (!linkedin.isEmpty()) html.append("<tr><td style='padding: 8px; font-weight: 500;'>LinkedIn:</td><td style='padding: 8px;'>").append(linkedin).append("</td></tr>");
+            if (!linkedin.isEmpty()) html.append("<tr><td style='padding: 10px; font-weight: 600;'>LinkedIn:</td><td style='padding: 10px;'>").append(linkedin).append("</td></tr>");
 
             String gender = info.optString("gender", "");
-            if (!gender.isEmpty()) html.append("<tr><td style='padding: 8px; font-weight: 500;'>Gender:</td><td style='padding: 8px;'>").append(gender).append("</td></tr>");
+            if (!gender.isEmpty()) html.append("<tr><td style='padding: 10px; font-weight: 600;'>Gender:</td><td style='padding: 10px;'>").append(gender).append("</td></tr>");
 
             String type = info.optString("type", "");
-            if (!type.isEmpty()) html.append("<tr><td style='padding: 8px; font-weight: 500;'>Type:</td><td style='padding: 8px;'>").append(type).append("</td></tr>");
+            if (!type.isEmpty()) html.append("<tr><td style='padding: 10px; font-weight: 600;'>Type:</td><td style='padding: 10px;'>").append(type).append("</td></tr>");
 
             html.append("</table>");
         }
@@ -717,6 +1023,15 @@ public class ViewCVPanel extends VBox {
         alert.showAndWait();
     }
 
+    private void showMaterialInfo(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.getDialogPane().getStyleClass().add("md-dialog");
+        alert.showAndWait();
+    }
+
     private void setupPdfButtonHandlers() {
         viewPdfButton.setOnAction(e -> {
             if (currentCvId == null) return;
@@ -840,14 +1155,5 @@ public class ViewCVPanel extends VBox {
                 new Thread(task).start();
             }
         });
-    }
-
-    private void showMaterialInfo(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.getDialogPane().getStyleClass().add("md-dialog");
-        alert.showAndWait();
     }
 }

@@ -13,8 +13,12 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+
+import java.awt.*;
 
 public class CV_APP extends Application {
 
@@ -28,7 +32,7 @@ public class CV_APP extends Application {
     private String jwtToken = null;
     private JWTTokenManager tokenManager;
 
-    private StackPane mainContainer;
+    private TabPane mainTabPane;
     private MaterialSearchPanel searchPanel;
     private MaterialUploadPanel uploadPanel;
     private ViewCVPanel viewCVPanel;
@@ -37,16 +41,18 @@ public class CV_APP extends Application {
 
     private Stage primaryStage;
     private HBox appBar;
-    private VBox navigationRail;
+
+    // Tabs that need state management
+    private Tab searchTab;
+    private Tab uploadTab;
+    private Tab viewCVTab;
+    private Tab rawTextTab;
+    private Tab auditLogTab;
 
     // Menu items that need state management
     private Button loginButton;
     private Button registerButton;
     private Button logoutButton;
-    private Button auditLogButton;
-
-    // Current view indicator
-    private Label currentViewLabel;
 
     @Override
     public void start(Stage stage) {
@@ -63,31 +69,16 @@ public class CV_APP extends Application {
         appBar = createMaterialAppBar();
         root.setTop(appBar);
 
-        // Create Material Design Navigation Rail (Left)
-        navigationRail = createMaterialNavigationRail();
-        root.setLeft(navigationRail);
+        // Create TabPane for main content
+        mainTabPane = createMaterialTabPane();
+        root.setCenter(mainTabPane);
 
-        // Create main content area with Material Design
-        mainContainer = new StackPane();
-        mainContainer.getStyleClass().add("md-card");
-        mainContainer.setPadding(new Insets(0));
-
-        // Initialize Material Design panels
-        searchPanel = new MaterialSearchPanel(this, serverUrl);
-        uploadPanel = new MaterialUploadPanel(this, serverUrl);
-        viewCVPanel = new ViewCVPanel(this, serverUrl);
-        rawView = new MaterialRawView(this, serverUrl);
-        auditLogPanel = new MaterialAuditLogPanel(this, serverUrl);
-
-        // Add all panels to main container
-        mainContainer.getChildren().addAll(
-                searchPanel, uploadPanel, viewCVPanel, rawView, auditLogPanel
-        );
-
-        root.setCenter(mainContainer);
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        int width = screenSize.width;
+        int height = screenSize.height;
 
         // Create Material Design scene
-        Scene scene = new Scene(root, 1400, 900);
+        Scene scene = new Scene(root, height, width);
 
         // Load Material Design CSS
         try {
@@ -105,24 +96,12 @@ public class CV_APP extends Application {
             updateTokensInPanels();
         }
 
-        // Update navigation state
-        updateNavigationUI();
+        // Update tab visibility based on login status
+        updateTabVisibility();
 
-        // Set initial navigation selection AFTER the rail is fully initialized
-        if (navigationRail != null && !navigationRail.getChildren().isEmpty()) {
-            // Find the search button (first button in the rail)
-            for (javafx.scene.Node node : navigationRail.getChildren()) {
-                if (node instanceof Button && node != navigationRail.getChildren().get(navigationRail.getChildren().size() - 1)) {
-                    Button searchButton = (Button) node;
-                    if (searchButton.getTooltip() != null && "Search".equals(searchButton.getTooltip().getText())) {
-                        updateNavSelection(searchButton);
-                        break;
-                    }
-                }
-            }
-        }
+        // Set initial tab selection to Search
+        mainTabPane.getSelectionModel().select(searchTab);
 
-        showView(SEARCH_VIEW);
         primaryStage.show();
 
         // Show Material Design login dialog if not logged in
@@ -141,17 +120,13 @@ public class CV_APP extends Application {
         Label appTitle = new Label("CV Management System");
         appTitle.getStyleClass().add("md-app-bar-title");
 
-        // Current view indicator
-        currentViewLabel = new Label("Search");
-        currentViewLabel.getStyleClass().addAll("md-body-medium", "md-spacing-16");
-
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         // User actions in app bar
         HBox userActions = createUserActions();
 
-        appBar.getChildren().addAll(appTitle, currentViewLabel, spacer, userActions);
+        appBar.getChildren().addAll(appTitle, spacer, userActions);
         return appBar;
     }
 
@@ -176,87 +151,70 @@ public class CV_APP extends Application {
         aboutButton.getStyleClass().addAll("md-button", "md-button-text");
         aboutButton.setOnAction(e -> showMaterialAboutDialog());
 
-        userActions.getChildren().addAll(loginButton, registerButton, logoutButton, aboutButton);
+        Button exitButton = new Button("Exit");
+        exitButton.getStyleClass().addAll("md-button", "md-button-text");
+        exitButton.setOnAction(e -> System.exit(0));
+
+        userActions.getChildren().addAll(loginButton, registerButton, logoutButton, aboutButton, exitButton);
         return userActions;
     }
 
-    private VBox createMaterialNavigationRail() {
-        VBox navRail = new VBox();
-        navRail.getStyleClass().addAll("md-nav-rail", "md-spacing-8");
-        navRail.setPrefWidth(80);
-        navRail.setAlignment(Pos.TOP_CENTER);
+    private TabPane createMaterialTabPane() {
+        TabPane tabPane = new TabPane();
+        tabPane.getStyleClass().add("md-tab-pane");
+        tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
-        // Navigation items
-        Button searchNavButton = createNavButton("Search", "🔍");
-        searchNavButton.setOnAction(e -> {
-            showView(SEARCH_VIEW);
-            updateNavSelection(searchNavButton);
-        });
+        // Initialize Material Design panels
+        searchPanel = new MaterialSearchPanel(this, serverUrl);
+        uploadPanel = new MaterialUploadPanel(this, serverUrl);
+        viewCVPanel = new ViewCVPanel(this, serverUrl);
+        rawView = new MaterialRawView(this, serverUrl);
+        auditLogPanel = new MaterialAuditLogPanel(this, serverUrl);
 
-        Button uploadNavButton = createNavButton("Upload", "📤");
-        uploadNavButton.setOnAction(e -> {
-            showView(UPLOAD_VIEW);
-            updateNavSelection(uploadNavButton);
-        });
+        // Create tabs
+        searchTab = new Tab("🔍 Search CVs", searchPanel);
+        searchTab.getStyleClass().add("md-tab");
 
-        auditLogButton = createNavButton("Audit", "📊");
-        auditLogButton.setOnAction(e -> {
-            showAuditLogView();
-            updateNavSelection(auditLogButton);
-        });
+        uploadTab = new Tab("⬆️ Upload CVs", uploadPanel);
+        uploadTab.getStyleClass().add("md-tab");
 
-        Button exitButton = createNavButton("Exit", "🚪");
-        exitButton.setOnAction(e -> System.exit(0));
+        auditLogTab = new Tab("📋 Audit Logs", auditLogPanel);
+        auditLogTab.getStyleClass().add("md-tab");
 
-        navRail.getChildren().addAll(
-                searchNavButton, uploadNavButton, auditLogButton,
-                new Region(), // Spacer
-                exitButton
-        );
+        // These tabs are initially hidden and shown programmatically
+        viewCVTab = new Tab("📄 CV Details", viewCVPanel);
+        viewCVTab.getStyleClass().add("md-tab");
 
-        VBox.setVgrow(navRail.getChildren().get(3), Priority.ALWAYS); // Make spacer grow
+        rawTextTab = new Tab("📝 Raw Text", rawView);
+        rawTextTab.getStyleClass().add("md-tab");
 
-        return navRail;
-    }
+        // Add main tabs (Search, Upload, Audit are always available)
+        tabPane.getTabs().addAll(searchTab, uploadTab, auditLogTab);
 
-    private Button createNavButton(String tooltip, String icon) {
-        Button button = new Button(icon);
-        button.getStyleClass().addAll("md-button", "md-button-icon");
-        button.setTooltip(new Tooltip(tooltip));
-        button.setPrefSize(56, 56);
-        return button;
-    }
-
-    private void updateNavSelection(Button selectedButton) {
-        if (navigationRail == null) return;
-
-        // Remove selection from all nav buttons
-        for (javafx.scene.Node node : navigationRail.getChildren()) {
-            if (node instanceof Button) {
-                Button btn = (Button) node;
-                btn.getStyleClass().removeAll("md-button-icon-filled");
-                if (!btn.getStyleClass().contains("md-button-icon")) {
-                    btn.getStyleClass().add("md-button-icon");
-                }
+        // Add selection change listener for audit log refresh
+        tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
+            if (newTab == auditLogTab && auditLogPanel != null) {
+                auditLogPanel.refreshLogs();
             }
-        }
+        });
 
-        // Add selection to clicked button
-        selectedButton.getStyleClass().removeAll("md-button-icon");
-        selectedButton.getStyleClass().add("md-button-icon-filled");
+        return tabPane;
     }
 
-    private void updateNavigationUI() {
+    private void updateTabVisibility() {
         boolean loggedIn = isLoggedIn();
+
+        // Update button visibility
         loginButton.setVisible(!loggedIn);
         loginButton.setManaged(!loggedIn);
         registerButton.setVisible(!loggedIn);
         registerButton.setManaged(!loggedIn);
         logoutButton.setVisible(loggedIn);
         logoutButton.setManaged(loggedIn);
-        if (auditLogButton != null) {
-            auditLogButton.setDisable(!loggedIn);
-        }
+
+        // Update tab availability
+        auditLogTab.setDisable(!loggedIn);
+        uploadTab.setDisable(!loggedIn);
     }
 
     public boolean isLoggedIn() {
@@ -264,49 +222,24 @@ public class CV_APP extends Application {
     }
 
     public void showView(String viewName) {
-        // Hide all panels first
-        if (searchPanel != null) searchPanel.setVisible(false);
-        if (uploadPanel != null) uploadPanel.setVisible(false);
-        if (viewCVPanel != null) viewCVPanel.setVisible(false);
-        if (rawView != null) rawView.setVisible(false);
-        if (auditLogPanel != null) auditLogPanel.setVisible(false);
-
-        // Show the requested panel and update app bar
         switch (viewName) {
             case SEARCH_VIEW:
-                if (searchPanel != null) {
-                    searchPanel.setVisible(true);
-                    searchPanel.toFront();
-                }
-                currentViewLabel.setText("Search CVs");
+                mainTabPane.getSelectionModel().select(searchTab);
                 break;
             case UPLOAD_VIEW:
-                if (uploadPanel != null) {
-                    uploadPanel.setVisible(true);
-                    uploadPanel.toFront();
-                }
-                currentViewLabel.setText("Upload CVs");
-                break;
-            case VIEW_CV_VIEW:
-                if (viewCVPanel != null) {
-                    viewCVPanel.setVisible(true);
-                    viewCVPanel.toFront();
-                }
-                currentViewLabel.setText("CV Details");
-                break;
-            case RAW_TEXT_VIEW:
-                if (rawView != null) {
-                    rawView.setVisible(true);
-                    rawView.toFront();
-                }
-                currentViewLabel.setText("Raw Text");
+                mainTabPane.getSelectionModel().select(uploadTab);
                 break;
             case AUDIT_LOG_VIEW:
                 if (auditLogPanel != null) {
-                    auditLogPanel.setVisible(true);
-                    auditLogPanel.toFront();
+                    auditLogPanel.refreshLogs();
                 }
-                currentViewLabel.setText("Audit Logs");
+                mainTabPane.getSelectionModel().select(auditLogTab);
+                break;
+            case VIEW_CV_VIEW:
+                showCVDetailsTab();
+                break;
+            case RAW_TEXT_VIEW:
+                showRawTextTab();
                 break;
         }
     }
@@ -315,21 +248,59 @@ public class CV_APP extends Application {
         if (auditLogPanel != null) {
             auditLogPanel.refreshLogs();
         }
-        showView(AUDIT_LOG_VIEW);
+        mainTabPane.getSelectionModel().select(auditLogTab);
     }
 
     public void showCVDetails(String cvId) {
         if (viewCVPanel != null) {
             viewCVPanel.loadCV(cvId);
         }
-        showView(VIEW_CV_VIEW);
+        showCVDetailsTab();
+    }
+
+    private void showCVDetailsTab() {
+        // Add tab if not already present
+        if (!mainTabPane.getTabs().contains(viewCVTab)) {
+            // Insert before the last permanent tab (audit log)
+            int insertIndex = mainTabPane.getTabs().size();
+            mainTabPane.getTabs().add(insertIndex, viewCVTab);
+
+            // Make the tab closable for this dynamic tab
+            viewCVTab.setOnClosed(e -> {
+                // Clean up when tab is closed
+                mainTabPane.getTabs().remove(viewCVTab);
+            });
+
+            // Add close button functionality
+            viewCVTab.setClosable(true);
+        }
+        mainTabPane.getSelectionModel().select(viewCVTab);
     }
 
     public void showRawTextView(String cvId, ViewCVPanel sourcePanel) {
         if (rawView != null) {
             rawView.loadRawText(cvId);
         }
-        showView(RAW_TEXT_VIEW);
+        showRawTextTab();
+    }
+
+    private void showRawTextTab() {
+        // Add tab if not already present
+        if (!mainTabPane.getTabs().contains(rawTextTab)) {
+            // Insert before the last permanent tab (audit log)
+            int insertIndex = mainTabPane.getTabs().size();
+            mainTabPane.getTabs().add(insertIndex, rawTextTab);
+
+            // Make the tab closable for this dynamic tab
+            rawTextTab.setOnClosed(e -> {
+                // Clean up when tab is closed
+                mainTabPane.getTabs().remove(rawTextTab);
+            });
+
+            // Add close button functionality
+            rawTextTab.setClosable(true);
+        }
+        mainTabPane.getSelectionModel().select(rawTextTab);
     }
 
     private void showMaterialLoginDialog() {
@@ -349,21 +320,18 @@ public class CV_APP extends Application {
         alert.setContentText(
                 "A modern Material Design JavaFX application for managing CVs\n\n" +
                         "Features:\n" +
-                        "• Material Design 3 interface\n" +
+                        "• Material Design 3 interface with intuitive tabs\n" +
                         "• Advanced search and filtering\n" +
                         "• Secure file upload (PDF & DOCX)\n" +
                         "• Comprehensive audit logging\n" +
                         "• Modern authentication system\n" +
-                        "• Responsive design patterns\n\n" +
+                        "• Responsive tabbed interface\n\n" +
                         "Built with JavaFX & Material Design\n" +
                         "© 2024 Vertex Systems"
         );
 
         alert.getDialogPane().getStyleClass().add("md-dialog");
-
-        // Style dialog buttons
         alert.getDialogPane().lookupButton(ButtonType.OK).getStyleClass().addAll("md-button", "md-button-filled");
-
         alert.showAndWait();
     }
 
@@ -374,7 +342,6 @@ public class CV_APP extends Application {
         confirmation.setContentText("Are you sure you want to sign out of your account?");
         confirmation.getDialogPane().getStyleClass().add("md-dialog");
 
-        // Style dialog buttons
         confirmation.getDialogPane().lookupButton(ButtonType.OK).getStyleClass().addAll("md-button", "md-button-filled");
         confirmation.getDialogPane().lookupButton(ButtonType.CANCEL).getStyleClass().addAll("md-button", "md-button-outlined");
 
@@ -382,8 +349,11 @@ public class CV_APP extends Application {
             if (response == ButtonType.OK) {
                 jwtToken = null;
                 tokenManager.clearAllTokens();
-                updateNavigationUI();
-                showView(SEARCH_VIEW);
+                updateTabVisibility();
+
+                // Remove any dynamic tabs and go back to search
+                mainTabPane.getTabs().removeAll(viewCVTab, rawTextTab);
+                mainTabPane.getSelectionModel().select(searchTab);
 
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Signed Out");
@@ -407,7 +377,7 @@ public class CV_APP extends Application {
                     java.time.LocalDateTime.now().plusHours(24).toString());
         }
         updateTokensInPanels();
-        updateNavigationUI();
+        updateTabVisibility();
     }
 
     public String getJwtToken() {

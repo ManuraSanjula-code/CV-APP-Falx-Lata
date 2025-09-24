@@ -6,7 +6,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -35,11 +34,10 @@ public class MaterialSearchPanel extends ScrollPane {
     private VBox filtersCard;
     private boolean filtersVisible = false;
 
-    // Enhanced Pagination components
-    private Button prevButton, nextButton, firstPageButton, lastPageButton;
+    // Simplified Pagination components
+    private Button prevButton, nextButton;
     private Label pageLabel, statusLabel, totalResultsLabel;
     private TextField pageInputField;
-    private Button goToPageButton;
     private int currentPage = 1;
     private int totalPages = 1;
     private int totalResults = 0;
@@ -76,8 +74,8 @@ public class MaterialSearchPanel extends ScrollPane {
         // Create results section
         VBox resultsSection = createMaterialResultsSection();
 
-        // Create enhanced pagination section
-        VBox paginationSection = createEnhancedPaginationSection();
+        // Create simplified pagination section
+        HBox paginationSection = createSimplePaginationSection();
 
         mainContent.getChildren().addAll(searchSection, filtersCard, resultsSection, paginationSection);
         VBox.setVgrow(resultsSection, Priority.ALWAYS);
@@ -270,11 +268,6 @@ public class MaterialSearchPanel extends ScrollPane {
         statusLabel = new Label("Ready to search");
         statusLabel.getStyleClass().add("md-body-small");
 
-        totalResultsLabel = new Label("");
-        totalResultsLabel.getStyleClass().add("md-body-small");
-
-        statusContainer.getChildren().addAll(statusLabel, totalResultsLabel);
-
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
@@ -322,70 +315,44 @@ public class MaterialSearchPanel extends ScrollPane {
         resultsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
-    private VBox createEnhancedPaginationSection() {
-        VBox paginationContainer = new VBox();
+    private HBox createSimplePaginationSection() {
+        HBox paginationContainer = new HBox();
         paginationContainer.getStyleClass().addAll("md-card-filled", "md-spacing-12");
         paginationContainer.setAlignment(Pos.CENTER);
 
-        // First row: Navigation buttons
-        HBox navigationRow = new HBox();
-        navigationRow.getStyleClass().add("md-spacing-16");
-        navigationRow.setAlignment(Pos.CENTER);
-
-        firstPageButton = new Button("≪");
-        firstPageButton.getStyleClass().addAll("md-button", "md-button-outlined");
-        firstPageButton.setDisable(true);
-        firstPageButton.setTooltip(new Tooltip("First page"));
-
-        prevButton = new Button("‹");
+        // Previous button
+        prevButton = new Button("◀");
         prevButton.getStyleClass().addAll("md-button", "md-button-outlined");
         prevButton.setDisable(true);
-        prevButton.setTooltip(new Tooltip("Previous page"));
 
-        pageLabel = new Label("Page: 1 of 1");
-        pageLabel.getStyleClass().add("md-body-medium");
-
-        nextButton = new Button("›");
-        nextButton.getStyleClass().addAll("md-button", "md-button-outlined");
-        nextButton.setDisable(true);
-        nextButton.setTooltip(new Tooltip("Next page"));
-
-        lastPageButton = new Button("≫");
-        lastPageButton.getStyleClass().addAll("md-button", "md-button-outlined");
-        lastPageButton.setDisable(true);
-        lastPageButton.setTooltip(new Tooltip("Last page"));
-
-        Region navLeftSpacer = new Region();
-        Region navRightSpacer = new Region();
-        HBox.setHgrow(navLeftSpacer, Priority.ALWAYS);
-        HBox.setHgrow(navRightSpacer, Priority.ALWAYS);
-
-        navigationRow.getChildren().addAll(
-                firstPageButton, prevButton, navLeftSpacer,
-                pageLabel, navRightSpacer, nextButton, lastPageButton
-        );
-
-        // Second row: Go to page functionality
-        HBox goToPageRow = new HBox();
-        goToPageRow.getStyleClass().add("md-spacing-8");
-        goToPageRow.setAlignment(Pos.CENTER);
-
-        Label goToLabel = new Label("Go to page:");
-        goToLabel.getStyleClass().add("md-body-small");
-
+        // Page input field - user can type and press Enter
         pageInputField = new TextField();
         pageInputField.getStyleClass().add("md-text-field-outlined");
-        pageInputField.setPromptText("Page number");
-        pageInputField.setPrefWidth(80);
-        pageInputField.setMaxWidth(80);
+        pageInputField.setPromptText("1");
+        pageInputField.setPrefWidth(60);
+        pageInputField.setMaxWidth(60);
+        pageInputField.setAlignment(Pos.CENTER);
 
-        goToPageButton = new Button("Go");
-        goToPageButton.getStyleClass().addAll("md-button", "md-button-tonal");
-        goToPageButton.setDisable(true);
+        // Page info label
+        pageLabel = new Label("of 1");
+        pageLabel.getStyleClass().add("md-body-medium");
 
-        goToPageRow.getChildren().addAll(goToLabel, pageInputField, goToPageButton);
+        // Next button
+        nextButton = new Button("▶");
+        nextButton.getStyleClass().addAll("md-button", "md-button-outlined");
+        nextButton.setDisable(true);
 
-        paginationContainer.getChildren().addAll(navigationRow, goToPageRow);
+        // Results info
+        totalResultsLabel = new Label("");
+        totalResultsLabel.getStyleClass().add("md-body-small");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        paginationContainer.getChildren().addAll(
+                prevButton, pageInputField, pageLabel, nextButton, spacer, totalResultsLabel
+        );
+
         return paginationContainer;
     }
 
@@ -396,17 +363,11 @@ public class MaterialSearchPanel extends ScrollPane {
         refreshButton.setOnAction(e -> refresh());
         clearFiltersButton.setOnAction(e -> clearAllFilters());
 
-        // Enhanced pagination event handlers
-        firstPageButton.setOnAction(e -> {
-            if (currentPage > 1) {
-                currentPage = 1;
-                performSearchWithCurrentParams();
-            }
-        });
-
+        // Simplified pagination event handlers
         prevButton.setOnAction(e -> {
             if (currentPage > 1) {
                 currentPage--;
+                updatePageInput();
                 performSearchWithCurrentParams();
             }
         });
@@ -414,26 +375,23 @@ public class MaterialSearchPanel extends ScrollPane {
         nextButton.setOnAction(e -> {
             if (currentPage < totalPages) {
                 currentPage++;
+                updatePageInput();
                 performSearchWithCurrentParams();
             }
         });
 
-        lastPageButton.setOnAction(e -> {
-            if (currentPage < totalPages) {
-                currentPage = totalPages;
-                performSearchWithCurrentParams();
+        // Handle Enter key or focus lost
+        pageInputField.setOnAction(e -> goToPage());
+        pageInputField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!isNowFocused) {
+                goToPage();
             }
         });
 
-        goToPageButton.setOnAction(e -> goToSpecificPage());
-        pageInputField.setOnAction(e -> goToSpecificPage());
-
-        // Validate page input as user types
+        // Only allow numbers
         pageInputField.textProperty().addListener((obs, oldText, newText) -> {
             if (!newText.matches("\\d*")) {
                 pageInputField.setText(oldText);
-            } else {
-                validateGoToPageInput();
             }
         });
 
@@ -458,7 +416,7 @@ public class MaterialSearchPanel extends ScrollPane {
         datePresetCombo.setOnAction(e -> applyDatePreset(datePresetCombo.getValue()));
     }
 
-    private void goToSpecificPage() {
+    private void goToPage() {
         try {
             String pageText = pageInputField.getText().trim();
             if (!pageText.isEmpty()) {
@@ -466,29 +424,19 @@ public class MaterialSearchPanel extends ScrollPane {
                 if (targetPage >= 1 && targetPage <= totalPages && targetPage != currentPage) {
                     currentPage = targetPage;
                     performSearchWithCurrentParams();
-                    pageInputField.clear();
+                } else {
+                    updatePageInput(); // Reset to current page if invalid
                 }
+            } else {
+                updatePageInput(); // Reset if empty
             }
         } catch (NumberFormatException e) {
-            // Invalid input, clear the field
-            pageInputField.clear();
+            updatePageInput(); // Reset if invalid number
         }
     }
 
-    private void validateGoToPageInput() {
-        String pageText = pageInputField.getText().trim();
-        boolean isValid = false;
-
-        if (!pageText.isEmpty()) {
-            try {
-                int targetPage = Integer.parseInt(pageText);
-                isValid = targetPage >= 1 && targetPage <= totalPages;
-            } catch (NumberFormatException e) {
-                isValid = false;
-            }
-        }
-
-        goToPageButton.setDisable(!isValid);
+    private void updatePageInput() {
+        pageInputField.setText(String.valueOf(currentPage));
     }
 
     private void toggleMaterialFilters() {
@@ -566,7 +514,6 @@ public class MaterialSearchPanel extends ScrollPane {
         statusLabel.setText("Searching...");
         statusLabel.getStyleClass().removeAll("md-status-success", "md-status-error");
         statusLabel.getStyleClass().add("md-status-info");
-        totalResultsLabel.setText("");
 
         // Disable pagination controls during search
         setSearchingState(true);
@@ -608,11 +555,8 @@ public class MaterialSearchPanel extends ScrollPane {
 
     private void setSearchingState(boolean searching) {
         searchButton.setDisable(searching);
-        firstPageButton.setDisable(searching);
         prevButton.setDisable(searching);
         nextButton.setDisable(searching);
-        lastPageButton.setDisable(searching);
-        goToPageButton.setDisable(searching);
         pageInputField.setDisable(searching);
     }
 
@@ -642,14 +586,7 @@ public class MaterialSearchPanel extends ScrollPane {
             statusLabel.getStyleClass().removeAll("md-status-error", "md-status-info");
             statusLabel.getStyleClass().add("md-status-success");
 
-            // Calculate result range for current page
-            int startResult = ((currentPage - 1) * perPageSpinner.getValue()) + 1;
-            int endResult = Math.min(startResult + resultsArray.length() - 1, totalResults);
-            totalResultsLabel.setText(String.format("Showing %d-%d of %d",
-                    startResult, endResult, totalResults));
-
-            pageLabel.setText(String.format("Page: %d of %d", currentPage, totalPages));
-            updatePaginationButtons();
+            updatePaginationControls();
 
         } catch (Exception e) {
             statusLabel.setText("Error parsing results: " + e.getMessage());
@@ -660,24 +597,27 @@ public class MaterialSearchPanel extends ScrollPane {
         }
     }
 
-    private void updatePaginationButtons() {
-        // Enable/disable navigation buttons based on current page
-        firstPageButton.setDisable(currentPage <= 1);
+    private void updatePaginationControls() {
         prevButton.setDisable(currentPage <= 1);
         nextButton.setDisable(currentPage >= totalPages);
-        lastPageButton.setDisable(currentPage >= totalPages);
+        pageLabel.setText(String.format("of %d", totalPages));
+        updatePageInput();
 
-        // Enable go-to-page functionality when we have multiple pages
-        pageInputField.setDisable(totalPages <= 1);
-        validateGoToPageInput();
+        // Update results info
+        if (totalResults > 0) {
+            int startResult = ((currentPage - 1) * perPageSpinner.getValue()) + 1;
+            int endResult = Math.min(currentPage * perPageSpinner.getValue(), totalResults);
+            totalResultsLabel.setText(String.format("%d-%d of %d results", startResult, endResult, totalResults));
+        } else {
+            totalResultsLabel.setText("");
+        }
     }
 
     private void resetPagination() {
         currentPage = 1;
         totalPages = 1;
         totalResults = 0;
-        pageLabel.setText("Page: 1 of 1");
-        updatePaginationButtons();
+        updatePaginationControls();
         pageInputField.clear();
     }
 

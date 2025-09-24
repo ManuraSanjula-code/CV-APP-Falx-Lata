@@ -30,13 +30,12 @@ public class MaterialAuditLogPanel extends ScrollPane {
     private ObservableList<AuditLogItem> tableData;
 
     private Button backButton, refreshButton, prevButton, nextButton;
-    private Button firstPageButton, lastPageButton, goToPageButton;
     private DatePicker startDatePicker, endDatePicker;
     private ComboBox<String> userFilterCombo, actionFilterCombo;
     private ComboBox<Integer> pageSizeCombo;
-    private TextField pageNumberField;
+    private TextField pageInputField;
     private Button applyFiltersButton, clearFiltersButton;
-    private Label pageLabel, statusLabel;
+    private Label pageLabel, statusLabel, totalResultsLabel;
 
     // Stats labels
     private Label totalLogsValue, todayLogsValue, usersValue;
@@ -53,9 +52,6 @@ public class MaterialAuditLogPanel extends ScrollPane {
     private int totalPages = 1;
     private int[] pageSizeOptions = {25, 50, 100, 200, 500};
     private int currentPageSize = 100; // Default page size
-
-    // Reference to controls section for updating pagination info
-    private HBox controlsSection;
 
     public MaterialAuditLogPanel(CV_APP app, String serverUrl) {
         this.parentApp = app;
@@ -91,16 +87,20 @@ public class MaterialAuditLogPanel extends ScrollPane {
         filtersSection.setVisible(false);
         filtersSection.setManaged(false);
 
+        // Create back button at top
+        HBox backSection = createBackSection();
+
         // Create toggle button for filters
         HBox toggleSection = createToggleSection();
 
         // Table section
         VBox tableSection = createMaterialTable();
 
-        // Controls section
-        controlsSection = createMaterialControls();
+        // Simplified controls section
+        HBox controlsSection = createMinimalControls();
 
         mainContent.getChildren().addAll(
+                backSection,
                 toggleSection,
                 headerSection,
                 filtersSection,
@@ -576,41 +576,34 @@ public class MaterialAuditLogPanel extends ScrollPane {
         logTable.getColumns().addAll(timestampCol, userCol, actionCol, cvIdCol, ipCol);
     }
 
-    private HBox createMaterialControls() {
-        HBox controlsSection = new HBox();
-        controlsSection.getStyleClass().addAll("md-card-filled", "md-spacing-16");
-        controlsSection.setAlignment(Pos.CENTER);
-        controlsSection.setPadding(new Insets(20, 24, 20, 24));
-
-        // Left controls (Back and Refresh)
-        HBox leftControls = new HBox();
-        leftControls.getStyleClass().add("md-spacing-12");
-        leftControls.setSpacing(16);
-        leftControls.setAlignment(Pos.CENTER_LEFT);
+    private HBox createBackSection() {
+        HBox backSection = new HBox();
+        backSection.getStyleClass().add("md-spacing-12");
+        backSection.setAlignment(Pos.CENTER_LEFT);
+        backSection.setPadding(new Insets(0, 0, 16, 0)); // Bottom margin
 
         backButton = new Button("← Back to Search");
         backButton.getStyleClass().addAll("md-button", "md-button-outlined");
         backButton.setPadding(new Insets(12, 24, 12, 24));
 
-        refreshButton = new Button("🔄 Refresh Logs");
+        backSection.getChildren().add(backButton);
+        return backSection;
+    }
+
+    private HBox createMinimalControls() {
+        HBox controlsSection = new HBox();
+        controlsSection.getStyleClass().addAll("md-card-filled", "md-spacing-12");
+        controlsSection.setAlignment(Pos.CENTER);
+        controlsSection.setPadding(new Insets(16, 20, 16, 20));
+        controlsSection.setSpacing(20);
+
+        // Refresh button
+        refreshButton = new Button("🔄 Refresh");
         refreshButton.getStyleClass().addAll("md-button", "md-button-tonal");
-        refreshButton.setPadding(new Insets(12, 24, 12, 24));
-
-        leftControls.getChildren().addAll(backButton, refreshButton);
-
-        // Center - Enhanced pagination controls
-        VBox paginationSection = new VBox();
-        paginationSection.setAlignment(Pos.CENTER);
-        paginationSection.setSpacing(12);
-        paginationSection.setPadding(new Insets(8));
 
         // Page size selector
-        HBox pageSizeSection = new HBox();
-        pageSizeSection.setAlignment(Pos.CENTER);
-        pageSizeSection.setSpacing(8);
-
-        Label pageSizeLabel = new Label("Show:");
-        pageSizeLabel.getStyleClass().add("md-label-medium");
+        Label showLabel = new Label("Show:");
+        showLabel.getStyleClass().add("md-label-medium");
 
         pageSizeCombo = new ComboBox<>();
         pageSizeCombo.getStyleClass().add("md-combo-box");
@@ -618,87 +611,41 @@ public class MaterialAuditLogPanel extends ScrollPane {
             pageSizeCombo.getItems().add(size);
         }
         pageSizeCombo.setValue(currentPageSize);
-        pageSizeCombo.setPrefWidth(80);
+        pageSizeCombo.setPrefWidth(70);
 
-        Label entriesLabel = new Label("entries per page");
-        entriesLabel.getStyleClass().add("md-label-medium");
+        // Previous button
+        prevButton = new Button("◀");
+        prevButton.getStyleClass().addAll("md-button", "md-button-outlined");
+        prevButton.setDisable(true);
 
-        pageSizeSection.getChildren().addAll(pageSizeLabel, pageSizeCombo, entriesLabel);
-
-        // Navigation controls
-        HBox navigationControls = new HBox();
-        navigationControls.setAlignment(Pos.CENTER);
-        navigationControls.setSpacing(8);
-
-        // First page button
-        firstPageButton = new Button("⏪");
-        firstPageButton.getStyleClass().addAll("md-button", "md-button-filled");
-        firstPageButton.setPrefWidth(40);
-        firstPageButton.setTooltip(new Tooltip("First Page"));
-
-        // Previous page button
-        prevButton = new Button("Previous");
-        prevButton.getStyleClass().addAll("md-button", "md-button-filled");
-        prevButton.setPrefWidth(80);
-        prevButton.setTooltip(new Tooltip("Previous Page"));
-
-        // Current page display and input
-        HBox pageInputSection = new HBox();
-        pageInputSection.setAlignment(Pos.CENTER);
-        pageInputSection.setSpacing(4);
-
-        Label pageOfLabel = new Label("Page");
-        pageOfLabel.getStyleClass().add("md-body-medium");
-
-        pageNumberField = new TextField();
-        pageNumberField.getStyleClass().add("md-text-field-outlined");
-        pageNumberField.setPrefWidth(60);
-        pageNumberField.setPromptText("1");
-        pageNumberField.setText("1");
-
-        Label ofLabel = new Label("of");
-        ofLabel.getStyleClass().add("md-body-medium");
-
-        Label totalPagesLabel = new Label("1");
-        totalPagesLabel.getStyleClass().add("md-body-medium");
-        totalPagesLabel.setStyle("-fx-font-weight: bold;");
-
-        goToPageButton = new Button("Go");
-        goToPageButton.getStyleClass().addAll("md-button", "md-button-tonal");
-        goToPageButton.setPrefWidth(40);
-
-        pageInputSection.getChildren().addAll(pageOfLabel, pageNumberField, ofLabel, totalPagesLabel, goToPageButton);
-
-        // Next page button
-        nextButton = new Button("Next");
-        nextButton.getStyleClass().addAll("md-button", "md-button-filled");
-        nextButton.setPrefWidth(80);
-        nextButton.setTooltip(new Tooltip("Next Page"));
-
-        // Last page button
-        lastPageButton = new Button("⏩");
-        lastPageButton.getStyleClass().addAll("md-button", "md-button-filled");
-        lastPageButton.setPrefWidth(40);
-        lastPageButton.setTooltip(new Tooltip("Last Page"));
-
-        navigationControls.getChildren().addAll(
-                firstPageButton, prevButton, pageInputSection, nextButton, lastPageButton
-        );
+        // Page input field
+        pageInputField = new TextField();
+        pageInputField.getStyleClass().add("md-text-field-outlined");
+        pageInputField.setPromptText("1");
+        pageInputField.setPrefWidth(50);
+        pageInputField.setAlignment(Pos.CENTER);
 
         // Page info label
-        pageLabel = new Label("Page 1 of 1 (0 entries)");
-        pageLabel.getStyleClass().add("md-body-large");
-        pageLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #1976D2;");
+        pageLabel = new Label("of 1");
+        pageLabel.getStyleClass().add("md-body-medium");
 
-        paginationSection.getChildren().addAll(pageSizeSection, navigationControls, pageLabel);
+        // Next button
+        nextButton = new Button("▶");
+        nextButton.getStyleClass().addAll("md-button", "md-button-outlined");
+        nextButton.setDisable(true);
 
-        // Spacers for layout
-        Region leftSpacer = new Region();
-        Region rightSpacer = new Region();
-        HBox.setHgrow(leftSpacer, Priority.ALWAYS);
-        HBox.setHgrow(rightSpacer, Priority.ALWAYS);
+        // Results info
+        totalResultsLabel = new Label("");
+        totalResultsLabel.getStyleClass().add("md-body-small");
 
-        controlsSection.getChildren().addAll(leftControls, leftSpacer, paginationSection, rightSpacer);
+        // Add all elements horizontally
+        controlsSection.getChildren().addAll(
+                refreshButton,
+                showLabel, pageSizeCombo,
+                prevButton, pageInputField, pageLabel, nextButton,
+                totalResultsLabel
+        );
+
         return controlsSection;
     }
 
@@ -706,12 +653,12 @@ public class MaterialAuditLogPanel extends ScrollPane {
         // Toggle button handler
         toggleFiltersButton.setOnAction(e -> toggleFiltersAndStats());
 
-        // Existing basic handlers
+        // Basic handlers
         backButton.setOnAction(e -> parentApp.showView(CV_APP.SEARCH_VIEW));
         refreshButton.setOnAction(e -> {
             refreshLogs();
-            loadStats(); // Also refresh stats
-            updateQuickStats(); // Update quick stats too
+            loadStats();
+            updateQuickStats();
         });
 
         applyFiltersButton.setOnAction(e -> {
@@ -721,15 +668,11 @@ public class MaterialAuditLogPanel extends ScrollPane {
 
         clearFiltersButton.setOnAction(e -> clearFilters());
 
-        // Enhanced navigation handlers
-        firstPageButton.setOnAction(e -> {
-            currentPage = 1;
-            refreshLogs();
-        });
-
+        // Simplified navigation handlers
         prevButton.setOnAction(e -> {
             if (currentPage > 1) {
                 currentPage--;
+                updatePageInput();
                 refreshLogs();
             }
         });
@@ -737,13 +680,9 @@ public class MaterialAuditLogPanel extends ScrollPane {
         nextButton.setOnAction(e -> {
             if (currentPage < totalPages) {
                 currentPage++;
+                updatePageInput();
                 refreshLogs();
             }
-        });
-
-        lastPageButton.setOnAction(e -> {
-            currentPage = totalPages;
-            refreshLogs();
         });
 
         // Page size change handler
@@ -751,16 +690,25 @@ public class MaterialAuditLogPanel extends ScrollPane {
             Integer newPageSize = pageSizeCombo.getValue();
             if (newPageSize != null && newPageSize != currentPageSize) {
                 currentPageSize = newPageSize;
-                currentPage = 1; // Reset to first page when changing page size
+                currentPage = 1;
                 refreshLogs();
             }
         });
 
-        // Go to page handler
-        goToPageButton.setOnAction(e -> goToSpecificPage());
+        // Handle Enter key or focus lost for page input
+        pageInputField.setOnAction(e -> goToPage());
+        pageInputField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!isNowFocused) {
+                goToPage();
+            }
+        });
 
-        // Enter key in page number field
-        pageNumberField.setOnAction(e -> goToSpecificPage());
+        // Only allow numbers
+        pageInputField.textProperty().addListener((obs, oldText, newText) -> {
+            if (!newText.matches("\\d*")) {
+                pageInputField.setText(oldText);
+            }
+        });
 
         // Double-click table handler
         logTable.setOnMouseClicked(e -> {
@@ -773,35 +721,27 @@ public class MaterialAuditLogPanel extends ScrollPane {
         });
     }
 
-    private void goToSpecificPage() {
+    private void goToPage() {
         try {
-            String pageText = pageNumberField.getText().trim();
+            String pageText = pageInputField.getText().trim();
             if (!pageText.isEmpty()) {
                 int targetPage = Integer.parseInt(pageText);
-                if (targetPage >= 1 && targetPage <= totalPages) {
+                if (targetPage >= 1 && targetPage <= totalPages && targetPage != currentPage) {
                     currentPage = targetPage;
                     refreshLogs();
                 } else {
-                    // Show error - page out of range
-                    Alert alert = new Alert(Alert.AlertType.WARNING);
-                    alert.setTitle("Invalid Page Number");
-                    alert.setHeaderText("Page number out of range");
-                    alert.setContentText(String.format("Please enter a page number between 1 and %d", totalPages));
-                    alert.getDialogPane().getStyleClass().add("md-dialog");
-                    alert.showAndWait();
-                    pageNumberField.setText(String.valueOf(currentPage));
+                    updatePageInput(); // Reset to current page if invalid
                 }
+            } else {
+                updatePageInput(); // Reset if empty
             }
-        } catch (NumberFormatException ex) {
-            // Show error - invalid number format
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Invalid Input");
-            alert.setHeaderText("Invalid page number");
-            alert.setContentText("Please enter a valid number.");
-            alert.getDialogPane().getStyleClass().add("md-dialog");
-            alert.showAndWait();
-            pageNumberField.setText(String.valueOf(currentPage));
+        } catch (NumberFormatException e) {
+            updatePageInput(); // Reset if invalid number
         }
+    }
+
+    private void updatePageInput() {
+        pageInputField.setText(String.valueOf(currentPage));
     }
 
     private void loadFilterOptions() {
@@ -928,7 +868,6 @@ public class MaterialAuditLogPanel extends ScrollPane {
         Task<HttpClientUtil.AuditLogResult> task = new Task<>() {
             @Override
             protected HttpClientUtil.AuditLogResult call() {
-                // Use currentPageSize instead of the fixed LOGS_PER_PAGE
                 return HttpClientUtil.fetchAuditLogs(serverUrl, currentPage, currentPageSize,
                         userFilter, actionFilter, startDate, endDate);
             }
@@ -950,18 +889,10 @@ public class MaterialAuditLogPanel extends ScrollPane {
                 }
 
                 totalPages = result.totalPages;
+                updatePaginationControls();
 
-                // Update page info with more detailed information
-                pageLabel.setText(String.format("Page %d of %d (%,d total entries, showing %d entries)",
-                        currentPage, totalPages, result.total, result.logs.size()));
-
-                // Update page number field
-                pageNumberField.setText(String.valueOf(currentPage));
-
-                updatePagination();
-
-                statusLabel.setText(String.format("Loaded %d of %,d audit log entries (Page size: %d)",
-                        result.logs.size(), result.total, currentPageSize));
+                statusLabel.setText(String.format("Loaded %d of %,d audit log entries",
+                        result.logs.size(), result.total));
                 statusLabel.getStyleClass().removeAll("md-status-error", "md-status-info");
                 statusLabel.getStyleClass().add("md-status-success");
             } else {
@@ -980,25 +911,21 @@ public class MaterialAuditLogPanel extends ScrollPane {
         new Thread(task).start();
     }
 
-    private void updatePagination() {
-        boolean isFirstPage = currentPage <= 1;
-        boolean isLastPage = currentPage >= totalPages;
+    private void updatePaginationControls() {
+        prevButton.setDisable(currentPage <= 1);
+        nextButton.setDisable(currentPage >= totalPages);
+        pageLabel.setText(String.format("of %d", totalPages));
+        updatePageInput();
 
-        firstPageButton.setDisable(isFirstPage);
-        prevButton.setDisable(isFirstPage);
-        nextButton.setDisable(isLastPage);
-        lastPageButton.setDisable(isLastPage);
-
-        // Update the total pages display in the page input section
-        VBox paginationSection = (VBox) controlsSection.getChildren().get(2);
-        HBox navigationControls = (HBox) paginationSection.getChildren().get(1);
-        HBox pageInputSection = (HBox) navigationControls.getChildren().get(2);
-        Label totalPagesLabel = (Label) pageInputSection.getChildren().get(3);
-        totalPagesLabel.setText(String.valueOf(totalPages));
-
-        // Enable/disable go to page functionality
-        goToPageButton.setDisable(totalPages <= 1);
-        pageNumberField.setDisable(totalPages <= 1);
+        // Update results info
+        if (tableData.size() > 0) {
+            int startResult = ((currentPage - 1) * currentPageSize) + 1;
+            int endResult = Math.min(currentPage * currentPageSize, startResult + tableData.size() - 1);
+            totalResultsLabel.setText(String.format("%d-%d entries (Page size: %d)",
+                    startResult, endResult, currentPageSize));
+        } else {
+            totalResultsLabel.setText("");
+        }
     }
 
     private void clearFilters() {
