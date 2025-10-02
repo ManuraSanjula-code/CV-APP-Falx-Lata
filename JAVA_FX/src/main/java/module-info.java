@@ -21,6 +21,7 @@ module com.vertex.cv_app.java_fx {
     requires org.apache.httpcomponents.client5.httpclient5;
     requires org.apache.httpcomponents.core5.httpcore5;
     requires java.desktop;
+    requires java.net.http;
 
     opens com.vertex.cv_app.java_fx.dialog to javafx.fxml;
     opens com.vertex.cv_app.java_fx.panels to javafx.fxml, javafx.base;

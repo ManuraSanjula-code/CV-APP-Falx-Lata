@@ -22,7 +22,7 @@ import org.json.JSONObject;
 
 public class MaterialRegisterDialog extends Stage {
 
-    private TextField usernameField, nameField, emailField;
+    private TextField usernameField;
     private PasswordField passwordField, confirmPasswordField;
     private Button registerButton, cancelButton;
     private Label statusLabel;
@@ -103,14 +103,6 @@ public class MaterialRegisterDialog extends Stage {
         VBox usernameSection = createFieldSection("Username *", "Choose a unique username");
         usernameField = (TextField) usernameSection.getChildren().get(1);
 
-        // Email field
-        VBox emailSection = createFieldSection("Email Address", "Enter your email address");
-        emailField = (TextField) emailSection.getChildren().get(1);
-
-        // Full name field
-        VBox nameSection = createFieldSection("Full Name", "Enter your full name");
-        nameField = (TextField) nameSection.getChildren().get(1);
-
         // Password field
         VBox passwordSection = createPasswordSection("Password *", "Choose a strong password (min 6 characters)");
         passwordField = (PasswordField) passwordSection.getChildren().get(1);
@@ -130,8 +122,7 @@ public class MaterialRegisterDialog extends Stage {
         statusLabel.setMaxWidth(350);
 
         formSection.getChildren().addAll(
-                usernameSection, emailSection, nameSection,
-                passwordSection, confirmPasswordSection,
+                usernameSection, passwordSection, confirmPasswordSection,
                 termsCheckBox, statusLabel
         );
         return formSection;
@@ -198,10 +189,7 @@ public class MaterialRegisterDialog extends Stage {
         passwordField.textProperty().addListener((obs, oldVal, newVal) -> validateInput());
         confirmPasswordField.textProperty().addListener((obs, oldVal, newVal) -> validateInput());
 
-        // Allow Enter key navigation
-        usernameField.setOnAction(e -> emailField.requestFocus());
-        emailField.setOnAction(e -> nameField.requestFocus());
-        nameField.setOnAction(e -> passwordField.requestFocus());
+
         passwordField.setOnAction(e -> confirmPasswordField.requestFocus());
         confirmPasswordField.setOnAction(e -> {
             if (!registerButton.isDisabled()) {
@@ -253,8 +241,6 @@ public class MaterialRegisterDialog extends Stage {
     private void performMaterialRegistration() {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
-        String email = emailField.getText().trim();
-        String name = nameField.getText().trim();
 
         // Final validation
         if (username.isEmpty() || password.isEmpty()) {
@@ -304,7 +290,7 @@ public class MaterialRegisterDialog extends Stage {
         Task<RegisterResult> registerTask = new Task<RegisterResult>() {
             @Override
             protected RegisterResult call() throws Exception {
-                return performRegistrationRequest(username, password, email, name);
+                return performRegistrationRequest(username, password);
             }
         };
 
@@ -353,7 +339,7 @@ public class MaterialRegisterDialog extends Stage {
         new Thread(registerTask).start();
     }
 
-    private RegisterResult performRegistrationRequest(String username, String password, String email, String name) {
+    private RegisterResult performRegistrationRequest(String username, String password) {
         String registerUrl = serverUrl + "/register";
 
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
@@ -364,12 +350,6 @@ public class MaterialRegisterDialog extends Stage {
             JSONObject jsonPayload = new JSONObject();
             jsonPayload.put("username", username);
             jsonPayload.put("password", password);
-            if (!email.isEmpty()) {
-                jsonPayload.put("email", email);
-            }
-            if (!name.isEmpty()) {
-                jsonPayload.put("name", name);
-            }
 
             StringEntity entity = new StringEntity(jsonPayload.toString(), ContentType.APPLICATION_JSON);
             registerRequest.setEntity(entity);

@@ -253,7 +253,7 @@
     -fx-border-color: transparent transparent -fx-md-on-surface-variant transparent;
     -fx-border-width: 0 0 2px 0;
     -fx-padding: 18px 16px 10px 16px; /* Increased padding */
-    -fx-min-height: 56px; /* Increased height */
+    -fx-min-height: 106px; /* Increased height */
 }
 
 .md-text-field:focused {

@@ -1,13 +1,13 @@
-import os
-import json
-import hashlib
 import datetime
-from typing import Dict, List, Optional, Set, Any
+import hashlib
+import itertools
+import json
 import re
+from typing import ClassVar
+from typing import Dict, List, Optional, Set, Any
 
 from dateutil.parser import parse
-import itertools
-from typing import ClassVar
+
 
 class CVUtils:
     """Utility functions for CV processing."""

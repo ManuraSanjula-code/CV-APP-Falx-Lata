@@ -9,12 +9,20 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.collections.FXCollections;
+import javafx.application.Platform;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MaterialUploadPanel extends VBox {
+public class MaterialUploadPanel extends StackPane {
 
     private CV_APP parentApp;
     private String serverUrl;
@@ -26,11 +34,24 @@ public class MaterialUploadPanel extends VBox {
     private List<File> selectedFiles;
     private ProgressIndicator progressIndicator;
     private Label uploadStatusLabel;
+    private ScrollPane scrollPane;
+    private VBox contentBox;
+
+    // Batch status checker components
+    private TextField batchIdField;
+    private Button checkStatusButton;
+    private ProgressIndicator statusProgressIndicator;
+    private VBox batchResultsContainer;
+    private Pagination batchPagination;
+    private Label batchSummaryLabel;
+    private List<JSONObject> currentBatchResults;
+    private static final int ITEMS_PER_PAGE = 5;
 
     public MaterialUploadPanel(CV_APP app, String serverUrl) {
         this.parentApp = app;
         this.serverUrl = serverUrl;
         this.selectedFiles = new ArrayList<>();
+        this.currentBatchResults = new ArrayList<>();
         this.token = app.getJwtToken();
 
         initializeMaterialUI();
@@ -42,7 +63,9 @@ public class MaterialUploadPanel extends VBox {
     }
 
     private void initializeMaterialUI() {
-        getStyleClass().addAll("md-spacing-24", "md-padding-24");
+        // Create main content VBox
+        contentBox = new VBox();
+        contentBox.getStyleClass().addAll("md-spacing-24", "md-padding-24");
 
         // Create header section
         VBox headerSection = createMaterialHeader();
@@ -56,8 +79,319 @@ public class MaterialUploadPanel extends VBox {
         // Create status section
         VBox statusSection = createMaterialStatusSection();
 
-        getChildren().addAll(headerSection, uploadArea, fileListSection, statusSection);
+        // Create batch status checker section
+        VBox batchStatusSection = createBatchStatusSection();
+
+        contentBox.getChildren().addAll(headerSection, uploadArea, fileListSection, statusSection, batchStatusSection);
         VBox.setVgrow(fileListSection, Priority.ALWAYS);
+
+        // Wrap content in ScrollPane
+        scrollPane = new ScrollPane(contentBox);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.getStyleClass().add("md-scroll-pane");
+
+        // Add ScrollPane to StackPane
+        getChildren().add(scrollPane);
+    }
+
+    private VBox createBatchStatusSection() {
+        VBox batchStatusSection = new VBox();
+        batchStatusSection.getStyleClass().addAll("md-card-elevated", "md-spacing-20");
+
+        // Section title
+        Label titleLabel = new Label("Check Batch Upload Status");
+        titleLabel.getStyleClass().add("md-headline-small");
+
+        Label subtitleLabel = new Label("Enter a batch ID to view the upload status and results");
+        subtitleLabel.getStyleClass().add("md-body-medium");
+
+        // Input area
+        HBox inputArea = new HBox();
+        inputArea.getStyleClass().add("md-spacing-12");
+        inputArea.setAlignment(Pos.CENTER_LEFT);
+
+        Label batchIdLabel = new Label("Batch ID:");
+        batchIdLabel.getStyleClass().add("md-body-medium");
+        batchIdLabel.setMinWidth(80);
+
+        batchIdField = new TextField();
+        batchIdField.setPromptText("e.g., batch_1759412420_Manura");
+        batchIdField.getStyleClass().add("md-text-field");
+        HBox.setHgrow(batchIdField, Priority.ALWAYS);
+
+        checkStatusButton = new Button("Check Status");
+        checkStatusButton.getStyleClass().addAll("md-button", "md-button-filled");
+
+        statusProgressIndicator = new ProgressIndicator();
+        statusProgressIndicator.setPrefSize(24, 24);
+        statusProgressIndicator.setVisible(false);
+
+        inputArea.getChildren().addAll(batchIdLabel, batchIdField, checkStatusButton, statusProgressIndicator);
+
+        // Summary label
+        batchSummaryLabel = new Label();
+        batchSummaryLabel.getStyleClass().addAll("md-body-medium", "md-status-info");
+        batchSummaryLabel.setVisible(false);
+        batchSummaryLabel.setWrapText(true);
+
+        // Results container
+        batchResultsContainer = new VBox();
+        batchResultsContainer.getStyleClass().add("md-spacing-12");
+        batchResultsContainer.setVisible(false);
+
+        // Pagination
+        batchPagination = new Pagination();
+        batchPagination.getStyleClass().add("md-pagination");
+        batchPagination.setVisible(false);
+        batchPagination.setPageFactory(this::createBatchResultPage);
+
+        batchStatusSection.getChildren().addAll(
+                titleLabel, subtitleLabel, inputArea, batchSummaryLabel,
+                batchResultsContainer, batchPagination
+        );
+
+        return batchStatusSection;
+    }
+
+    private VBox createBatchResultPage(int pageIndex) {
+        VBox pageContent = new VBox();
+        pageContent.getStyleClass().add("md-spacing-12");
+
+        int fromIndex = pageIndex * ITEMS_PER_PAGE;
+        int toIndex = Math.min(fromIndex + ITEMS_PER_PAGE, currentBatchResults.size());
+
+        for (int i = fromIndex; i < toIndex; i++) {
+            JSONObject result = currentBatchResults.get(i);
+            VBox resultCard = createResultCard(result, i + 1);
+            pageContent.getChildren().add(resultCard);
+        }
+
+        return pageContent;
+    }
+
+    private VBox createResultCard(JSONObject result, int index) {
+        VBox card = new VBox();
+        card.getStyleClass().addAll("md-card-outlined", "md-spacing-12");
+
+        // Header with index and status
+        HBox header = new HBox();
+        header.getStyleClass().add("md-spacing-12");
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        Label indexLabel = new Label("#" + index);
+        indexLabel.getStyleClass().add("md-title-medium");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        String status = result.getString("status");
+        Label statusBadge = new Label(status.toUpperCase());
+        statusBadge.getStyleClass().add("md-badge");
+        if (status.equals("success")) {
+            statusBadge.getStyleClass().add("md-badge-success");
+        } else {
+            statusBadge.getStyleClass().add("md-badge-error");
+        }
+
+        header.getChildren().addAll(indexLabel, spacer, statusBadge);
+
+        // Details grid
+        GridPane detailsGrid = new GridPane();
+        detailsGrid.getStyleClass().add("md-spacing-8");
+        detailsGrid.setHgap(16);
+        detailsGrid.setVgap(8);
+
+        int row = 0;
+
+        // Filename
+        addDetailRow(detailsGrid, row++, "Filename:", result.getString("filename"));
+
+        // Name
+        if (result.has("name") && !result.isNull("name")) {
+            addDetailRow(detailsGrid, row++, "Extracted Name:", result.getString("name"));
+        }
+
+        // ID
+        if (result.has("id") && !result.isNull("id")) {
+            addDetailRow(detailsGrid, row++, "Document ID:", result.getString("id"));
+        }
+
+        // Action
+        if (result.has("action") && !result.isNull("action")) {
+            String action = result.getString("action");
+            addDetailRow(detailsGrid, row++, "Action:", action.toUpperCase());
+        }
+
+        // Processing time
+        if (result.has("processing_time") && !result.isNull("processing_time")) {
+            double processingTime = result.getDouble("processing_time");
+            addDetailRow(detailsGrid, row++, "Processing Time:",
+                    String.format("%.2f seconds", processingTime));
+        }
+
+        // Existing ID (if duplicate)
+        if (result.has("existing_id") && !result.isNull("existing_id")) {
+            addDetailRow(detailsGrid, row++, "Existing ID:", result.getString("existing_id"));
+        }
+
+        card.getChildren().addAll(header, detailsGrid);
+        return card;
+    }
+
+    private void addDetailRow(GridPane grid, int row, String label, String value) {
+        Label labelNode = new Label(label);
+        labelNode.getStyleClass().addAll("md-body-small", "md-text-secondary");
+        labelNode.setMinWidth(120);
+
+        Label valueNode = new Label(value);
+        valueNode.getStyleClass().add("md-body-medium");
+        valueNode.setWrapText(true);
+
+        grid.add(labelNode, 0, row);
+        grid.add(valueNode, 1, row);
+    }
+
+    private void checkBatchStatus() {
+        String batchId = batchIdField.getText().trim();
+
+        if (batchId.isEmpty()) {
+            showAlert(Alert.AlertType.WARNING, "Input Required",
+                    "Please enter a batch ID to check status.");
+            return;
+        }
+
+        checkStatusButton.setDisable(true);
+        statusProgressIndicator.setVisible(true);
+        batchResultsContainer.setVisible(false);
+        batchPagination.setVisible(false);
+        batchSummaryLabel.setVisible(false);
+
+        Task<String> task = new Task<>() {
+            @Override
+            protected String call() throws Exception {
+                String url = serverUrl + "/upload/status/" + batchId;
+
+                HttpClient client = HttpClient.newHttpClient();
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("Authorization", "Bearer " + token)
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = client.send(request,
+                        HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200) {
+                    return response.body();
+                } else {
+                    throw new Exception("Failed to fetch batch status: " + response.statusCode());
+                }
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            try {
+                String responseBody = task.getValue();
+                JSONObject batchData = new JSONObject(responseBody);
+                displayBatchResults(batchData);
+            } catch (Exception ex) {
+                showAlert(Alert.AlertType.ERROR, "Parse Error",
+                        "Failed to parse batch status response: " + ex.getMessage());
+            }
+
+            checkStatusButton.setDisable(false);
+            statusProgressIndicator.setVisible(false);
+        });
+
+        task.setOnFailed(e -> {
+            showAlert(Alert.AlertType.ERROR, "Request Failed",
+                    "Failed to fetch batch status: " + task.getException().getMessage());
+            checkStatusButton.setDisable(false);
+            statusProgressIndicator.setVisible(false);
+        });
+
+        new Thread(task).start();
+    }
+
+    private void displayBatchResults(JSONObject batchData) {
+        // Clear previous results
+        currentBatchResults.clear();
+
+        // Extract summary information
+        String batchId = batchData.getString("batch_id");
+        int totalFiles = batchData.getInt("total_files");
+        int successCount = batchData.getInt("success_count");
+        int errorCount = batchData.getInt("error_count");
+        int skippedCount = batchData.getInt("skipped_count");
+        String completedAt = batchData.optString("completed_at", "N/A");
+        String processingMode = batchData.optString("processing_mode", "N/A");
+
+        // Format summary
+        String summaryText = String.format(
+                "Batch ID: %s | Total: %d | Success: %d | Errors: %d | Skipped: %d | Completed: %s | Mode: %s",
+                batchId, totalFiles, successCount, errorCount, skippedCount,
+                formatDateTime(completedAt), processingMode
+        );
+
+        batchSummaryLabel.setText(summaryText);
+        batchSummaryLabel.setVisible(true);
+
+        // Apply appropriate style based on results
+        batchSummaryLabel.getStyleClass().removeAll("md-status-error", "md-status-success", "md-status-info");
+        if (errorCount > 0) {
+            batchSummaryLabel.getStyleClass().add("md-status-error");
+        } else if (successCount == totalFiles) {
+            batchSummaryLabel.getStyleClass().add("md-status-success");
+        } else {
+            batchSummaryLabel.getStyleClass().add("md-status-info");
+        }
+
+        // Extract processed results
+        JSONArray processed = batchData.getJSONArray("processed");
+        for (int i = 0; i < processed.length(); i++) {
+            currentBatchResults.add(processed.getJSONObject(i));
+        }
+
+        // Setup pagination
+        if (!currentBatchResults.isEmpty()) {
+            int pageCount = (int) Math.ceil((double) currentBatchResults.size() / ITEMS_PER_PAGE);
+            batchPagination.setPageCount(pageCount);
+            batchPagination.setCurrentPageIndex(0);
+            batchPagination.setVisible(true);
+            batchResultsContainer.setVisible(true);
+        } else {
+            showAlert(Alert.AlertType.INFORMATION, "No Results",
+                    "This batch has no processed files.");
+        }
+    }
+
+    private String formatDateTime(String dateTime) {
+        if (dateTime == null || dateTime.equals("N/A") || dateTime.isEmpty()) {
+            return "N/A";
+        }
+        try {
+            // Simple formatting - just take the first part before microseconds
+            if (dateTime.contains(".")) {
+                return dateTime.substring(0, dateTime.indexOf(".")).replace("T", " ");
+            }
+            return dateTime.replace("T", " ");
+        } catch (Exception e) {
+            return dateTime;
+        }
+    }
+
+    private void showAlert(Alert.AlertType type, String title, String content) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(type);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(content);
+            alert.getDialogPane().getStyleClass().add("md-dialog");
+            alert.showAndWait();
+        });
     }
 
     private VBox createMaterialHeader() {
@@ -214,6 +548,7 @@ public class MaterialUploadPanel extends VBox {
         selectButton.setOnAction(e -> selectMaterialFiles());
         uploadButton.setOnAction(e -> uploadMaterialFiles());
         backButton.setOnAction(e -> parentApp.showView(CV_APP.SEARCH_VIEW));
+        checkStatusButton.setOnAction(e -> checkBatchStatus());
     }
 
     private void selectMaterialFiles() {
